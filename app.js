@@ -2,6 +2,10 @@
 //  APP: State, navigation, quiz flow, rendering
 // ══════════════════════════════════════════════════════
 
+const SUPABASE_URL = 'https://hjbywpwlfxrwfhngtxek.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqYnl3cHdsZnhyd2Zobmd0eGVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODc4NTcsImV4cCI6MjA5MjQ2Mzg1N30.kQPDRub7BubOP1Trlq8NlExAZAIi19mBgvjRgpdcNk8'
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+
 const QUESTIONS_PER_SESSION = 20;
 const SESSION_TIME = 10;
 
@@ -190,6 +194,15 @@ async function runProcessing() {
 
   bots = generateBots();
   userNode = computeUserPosition(sessionAnswers);
+
+  db.from('sessions').insert({
+    answers: sessionAnswers,
+    cluster_idx: userNode.clusterIdx,
+    archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
+    x: userNode.x,
+    y: userNode.y
+  });
+
   showScreen('screen-compass');
   buildCompass();
 }
