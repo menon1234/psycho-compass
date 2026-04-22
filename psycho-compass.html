@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CompoundEYE — Psychographic Cluster Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #060608;
+    --white: #f0ede8;
+    --acid: #c8f53e;
+    --pink: #ff3d6e;
+    --blue: #1a8cff;
+    --orange: #ff6b35;
+    --muted: #2a2a30;
+    --border: #333340;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  /* ─── INTRO SCREEN ─── */
+  #screen-intro {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(200,245,62,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,245,62,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridPulse 8s ease-in-out infinite;
+  }
+  @keyframes gridPulse {
+    0%,100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .noise {
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .intro-content { position: relative; z-index: 1; max-width: 700px; padding: 40px; }
+
+  .intro-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--acid);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.2s forwards;
+  }
+
+  .intro-title {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(60px, 12vw, 110px);
+    font-weight: 800;
+    line-height: 0.9;
+    letter-spacing: -4px;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.4s forwards;
+  }
+
+  .intro-title span { color: var(--acid); }
+
+  .intro-desc {
+    font-size: 13px;
+    line-height: 1.8;
+    color: #888;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.6s forwards;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    padding: 18px 48px;
+    background: var(--acid);
+    color: var(--black);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.8s forwards;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+  .btn-primary:hover { background: var(--white); transform: translate(-2px, -2px); }
+
+  .btn-secondary {
+    display: inline-block;
+    padding: 16px 36px;
+    background: transparent;
+    color: var(--acid);
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid var(--acid);
+    transition: all 0.2s;
+    margin-left: 16px;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+  .btn-secondary:hover { background: rgba(200,245,62,0.1); }
+
+  .stats-row {
+    display: flex;
+    gap: 48px;
+    margin-top: 60px;
+    opacity: 0;
+    animation: fadeUp 0.8s 1s forwards;
+  }
+  .stat { text-align: left; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--acid); }
+  .stat-label { font-size: 10px; letter-spacing: 2px; color: #555; text-transform: uppercase; margin-top: 4px; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── QUESTION SCREEN ─── */
+  #screen-question {
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .q-bg-pulse {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(200,245,62,0.03) 0%, transparent 60%);
+    transition: background 0.5s;
+  }
+
+  .q-container { position: relative; z-index: 1; width: 100%; max-width: 680px; }
+
+  .q-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 48px;
+  }
+
+  .q-progress-wrap {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .q-progress-bar {
+    height: 100%;
+    background: var(--acid);
+    transition: width 0.3s;
+    position: relative;
+  }
+  .q-progress-bar::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: -2px;
+    width: 6px;
+    height: 6px;
+    background: var(--acid);
+    border-radius: 50%;
+  }
+
+  .q-counter {
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #555;
+    margin-left: 24px;
+    white-space: nowrap;
+  }
+
+  .q-timer-ring {
+    width: 56px;
+    height: 56px;
+    position: relative;
+    margin-left: 24px;
+    flex-shrink: 0;
+  }
+  .q-timer-ring svg { transform: rotate(-90deg); }
+  .q-timer-ring .ring-bg { fill: none; stroke: var(--border); stroke-width: 3; }
+  .q-timer-ring .ring-fill {
+    fill: none;
+    stroke: var(--acid);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 138;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+  .q-timer-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+  }
+
+  .q-category {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--acid);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .q-text {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 48px;
+    min-height: 80px;
+  }
+
+  .q-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .q-option {
+    padding: 24px 20px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+
+  .q-option:hover {
+    border-color: var(--acid);
+    background: rgba(200,245,62,0.06);
+    transform: translateY(-2px);
+  }
+
+  .q-option.selected {
+    border-color: var(--acid);
+    background: rgba(200,245,62,0.12);
+  }
+
+  .q-option.timeout {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .opt-letter {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #555;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .opt-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+
+  .opt-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .opt-sub { font-size: 11px; color: #666; margin-top: 4px; }
+
+  /* Color options */
+  .color-swatch {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  /* Image/frame options */
+  .frame-preview {
+    width: 100%;
+    height: 70px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ─── TIMEOUT OVERLAY ─── */
+  .timeout-flash {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,61,110,0.15);
+    pointer-events: none;
+    opacity: 0;
+    z-index: 999;
+    transition: opacity 0.1s;
+  }
+  .timeout-flash.show { opacity: 1; }
+
+  /* ─── PROCESSING SCREEN ─── */
+  #screen-processing {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .processing-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--acid);
+    margin-bottom: 48px;
+  }
+
+  .processing-visual {
+    width: 200px;
+    height: 200px;
+    position: relative;
+    margin: 0 auto 48px;
+  }
+
+  .proc-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    animation: spin 3s linear infinite;
+  }
+  .proc-ring:nth-child(1) {
+    inset: 0;
+    border-top-color: var(--acid);
+    animation-duration: 2s;
+  }
+  .proc-ring:nth-child(2) {
+    inset: 20px;
+    border-right-color: var(--pink);
+    animation-duration: 3s;
+    animation-direction: reverse;
+  }
+  .proc-ring:nth-child(3) {
+    inset: 40px;
+    border-bottom-color: var(--blue);
+    animation-duration: 4s;
+  }
+  .proc-ring:nth-child(4) {
+    inset: 60px;
+    border-left-color: var(--orange);
+    animation-duration: 2.5s;
+    animation-direction: reverse;
+  }
+
+  .proc-center {
+    position: absolute;
+    inset: 80px;
+    background: var(--acid);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--black);
+    animation: pulseCenter 1.5s ease-in-out infinite;
+  }
+  @keyframes pulseCenter {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .proc-log {
+    font-size: 11px;
+    color: #555;
+    letter-spacing: 1px;
+    min-height: 20px;
+    margin-bottom: 8px;
+  }
+  .proc-log.active { color: var(--acid); }
+
+  .proc-bar-wrap {
+    width: 300px;
+    height: 2px;
+    background: var(--border);
+    margin: 24px auto;
+    overflow: hidden;
+  }
+  .proc-bar {
+    height: 100%;
+    background: var(--acid);
+    width: 0%;
+    transition: width 0.3s;
+  }
+
+  /* ─── COMPASS SCREEN ─── */
+  #screen-compass {
+    padding: 24px;
+    flex-direction: column;
+  }
+
+  .compass-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .compass-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+  .compass-title span { color: var(--acid); }
+
+  .compass-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 24px;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .compass-wrap {
+    position: relative;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    min-height: 600px;
+  }
+
+  #compass-canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    cursor: crosshair;
+  }
+
+  .compass-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .legend-card {
+    padding: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    transition: all 0.2s;
+  }
+  .legend-card:hover { border-color: rgba(200,245,62,0.3); background: rgba(200,245,62,0.03); }
+
+  .legend-card.active { border-color: var(--acid); background: rgba(200,245,62,0.06); }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+  }
+
+  .legend-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .legend-desc { font-size: 11px; color: #666; line-height: 1.6; }
+  .legend-count { font-size: 10px; color: var(--acid); letter-spacing: 1px; margin-top: 8px; }
+
+  .sidebar-section {
+    padding: 20px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+  .sidebar-title {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #555;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .match-card {
+    padding: 14px;
+    border: 1px solid var(--border);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .match-card:hover { border-color: var(--acid); }
+
+  .match-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    color: var(--black);
+    flex-shrink: 0;
+  }
+
+  .match-name { font-size: 12px; font-weight: 700; }
+  .match-sim { font-size: 10px; color: #666; margin-top: 2px; }
+  .match-sim span { color: var(--acid); }
+
+  .axis-label {
+    position: absolute;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #444;
+    text-transform: uppercase;
+  }
+
+  /* ─── TOOLTIP ─── */
+  .tooltip {
+    position: fixed;
+    background: var(--black);
+    border: 1px solid var(--acid);
+    padding: 12px 16px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+    max-width: 200px;
+  }
+  .tooltip.show { display: block; }
+  .tooltip-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .tooltip-cluster { color: var(--acid); font-size: 10px; letter-spacing: 1px; }
+  .tooltip-sim { color: #888; font-size: 10px; margin-top: 4px; }
+
+  /* ─── MISC ─── */
+  .tag {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(200,245,62,0.1);
+    color: var(--acid);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-right: 8px;
+    margin-bottom: 8px;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* Simulate Q transition */
+  .q-enter { animation: qEnter 0.3s forwards; }
+  @keyframes qEnter {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .q-exit { animation: qExit 0.2s forwards; }
+  @keyframes qExit {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(-30px); }
+  }
+
+  /* Day indicator */
+  .day-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .day-chip {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: #555;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .day-chip.done { background: var(--acid); color: var(--black); border-color: var(--acid); }
+  .day-chip.active { border-color: var(--acid); color: var(--acid); }
+
+  @media (max-width: 768px) {
+    .compass-layout { grid-template-columns: 1fr; }
+    .q-options { grid-template-columns: 1fr; }
+    .stats-row { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TIMEOUT FLASH -->
+<div class="timeout-flash" id="timeout-flash"></div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-name" id="tt-name"></div>
+  <div class="tooltip-cluster" id="tt-cluster"></div>
+  <div class="tooltip-sim" id="tt-sim"></div>
+</div>
+
+<!-- ══════════════════════════════════ INTRO SCREEN ══════════════════════════════════ -->
+<div class="screen active" id="screen-intro">
+  <div class="grid-bg"></div>
+  <div class="noise"></div>
+  <div class="intro-content">
+    <div class="intro-label">◈ Psychographic Mapping Engine v0.1</div>
+    <h1 class="intro-title" style="text-align:center;">Compound<span>EYE</span></h1>
+    <p class="intro-desc">
+      Answer 20 abstract questions per day. Each choice reveals something about how<br>
+      your mind processes reality — color, shape, instinct, pattern. Over days,<br>
+      we cluster your responses and map you to others who share your frequency.
+    </p>
+    <div>
+      <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
+      <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat">
+        <div class="stat-num">200</div>
+        <div class="stat-label">Active nodes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">500</div>
+        <div class="stat-label">Questions pool</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">4</div>
+        <div class="stat-label">Clusters</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">10s</div>
+        <div class="stat-label">Per question</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ QUESTION SCREEN ══════════════════════════════════ -->
+<div class="screen" id="screen-question">
+  <div class="q-bg-pulse" id="q-bg-pulse"></div>
+  <div class="q-container">
+    <div class="q-header">
+      <div class="q-progress-wrap">
+        <div class="q-progress-bar" id="q-progress-bar"></div>
+      </div>
+      <div class="q-counter" id="q-counter">01 / 20</div>
+      <div class="q-timer-ring" id="timer-ring">
+        <svg viewBox="0 0 48 48" width="56" height="56">
+          <circle class="ring-bg" cx="24" cy="24" r="22"/>
+          <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="22"/>
+        </svg>
+        <div class="q-timer-text" id="timer-text">20</div>
+      </div>
+    </div>
+
+    <div id="q-content" class="q-enter">
+      <div class="q-category" id="q-category">VISUAL PREFERENCE</div>
+      <div class="q-text" id="q-text">Which color speaks to you right now?</div>
+      <div class="q-options" id="q-options"></div>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center;">
+      <div class="day-chips" id="day-chips"></div>
+      <div style="font-size: 10px; color: #333; letter-spacing: 2px;">SKIP WITH ↵</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ PROCESSING SCREEN ══════════════════════════════════ -->
+<div class="screen" id="screen-processing">
+  <div class="processing-title">◈ CLUSTERING RESPONSES</div>
+  <div class="processing-visual">
+    <div class="proc-ring"></div>
+    <div class="proc-ring"></div>
+    <div class="proc-ring"></div>
+    <div class="proc-ring"></div>
+    <div class="proc-center" id="proc-pct">0%</div>
+  </div>
+  <div id="proc-log-1" class="proc-log">Initializing 200 bot profiles...</div>
+  <div id="proc-log-2" class="proc-log">Generating response vectors...</div>
+  <div id="proc-log-3" class="proc-log">Running K-means clustering...</div>
+  <div id="proc-log-4" class="proc-log">Projecting to 2D manifold (UMAP)...</div>
+  <div id="proc-log-5" class="proc-log">Placing nodes on compound eye...</div>
+  <div class="proc-bar-wrap">
+    <div class="proc-bar" id="proc-bar"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ COMPASS SCREEN ══════════════════════════════════ -->
+<div class="screen" id="screen-compass">
+  <div class="compass-header">
+    <div>
+      <div style="font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase;margin-bottom:4px;">◈ Session complete — Day 1 of 20</div>
+      <div class="compass-title">YOUR COMPOUND <span>EYE</span></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div id="user-cluster-badge" style="padding:8px 20px;font-size:11px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--acid);color:var(--acid);">CLUSTER: —</div>
+      <button class="btn-secondary" onclick="showScreen('screen-intro')" style="margin:0;">NEW SESSION</button>
+    </div>
+  </div>
+
+  <div class="compass-layout">
+    <!-- MAIN CANVAS -->
+    <div class="compass-wrap" id="compass-wrap">
+      <canvas id="compass-canvas"></canvas>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="compass-legend" id="compass-legend" style="overflow-y:auto;max-height:80vh;">
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Cluster Map</div>
+        <div id="cluster-cards"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Your Matches</div>
+        <div id="match-list"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Progress</div>
+        <div style="font-size:11px;color:#666;margin-bottom:12px;">Cluster confidence improves with more sessions</div>
+        <div style="display:flex;gap:4px;">
+          <div style="flex:1;height:4px;background:var(--acid);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
+          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:#444;">
+          <span>D1</span><span>D5</span><span>D10</span><span>D15</span><span>D20</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  DATA: 500 QUESTIONS (across categories)
+// ══════════════════════════════════════════════════════
+const CATEGORIES = [
+  { id: 'color', label: 'COLOR INSTINCT', type: 'color' },
+  { id: 'shape', label: 'SHAPE PREFERENCE', type: 'shape' },
+  { id: 'frame', label: 'FRAME SELECTION', type: 'frame' },
+  { id: 'word', label: 'WORD RESONANCE', type: 'choice' },
+  { id: 'scene', label: 'SCENE PERCEPTION', type: 'choice' },
+  { id: 'sound', label: 'SOUND TEXTURE', type: 'choice' },
+  { id: 'number', label: 'NUMBER FEELING', type: 'choice' },
+  { id: 'time', label: 'TIME SENSE', type: 'choice' },
+  { id: 'space', label: 'SPATIAL BIAS', type: 'choice' },
+  { id: 'motion', label: 'MOTION QUALITY', type: 'choice' },
+];
+
+const COLORS = [
+  { label: 'Obsidian Black', hex: '#1a1a1a', dim: 0 },
+  { label: 'Cobalt Storm', hex: '#1a5fcc', dim: 1 },
+  { label: 'Raw Umber', hex: '#8b5e3c', dim: 0 },
+  { label: 'Acid Green', hex: '#a8e63d', dim: 2 },
+  { label: 'Deep Crimson', hex: '#8b1a1a', dim: 0 },
+  { label: 'Ghost White', hex: '#e8e8e8', dim: 3 },
+  { label: 'Bruised Violet', hex: '#5c1a8b', dim: 1 },
+  { label: 'Desert Sand', hex: '#c4a882', dim: 3 },
+  { label: 'Rust Orange', hex: '#cc5500', dim: 2 },
+  { label: 'Teal Abyss', hex: '#0d5c5c', dim: 1 },
+  { label: 'Blush Rose', hex: '#e8a0b4', dim: 3 },
+  { label: 'Electric Yellow', hex: '#ffd700', dim: 2 },
+];
+
+const SHAPES = [
+  { label: 'Circle', icon: '◉', desc: 'continuous, whole', dim: 3 },
+  { label: 'Triangle', icon: '△', desc: 'directed, sharp', dim: 2 },
+  { label: 'Square', icon: '□', desc: 'stable, contained', dim: 0 },
+  { label: 'Spiral', icon: '◌', desc: 'recursive, evolving', dim: 1 },
+  { label: 'Cross', icon: '✛', desc: 'intersecting, divided', dim: 0 },
+  { label: 'Wave', icon: '〜', desc: 'fluid, rhythmic', dim: 1 },
+  { label: 'Hexagon', icon: '⬡', desc: 'efficient, structural', dim: 0 },
+  { label: 'Arrow', icon: '→', desc: 'purposeful, forward', dim: 2 },
+];
+
+const FRAME_TYPES = [
+  { label: 'Minimal Line', style: 'border: 1px solid #aaa', desc: 'clean edge' },
+  { label: 'Heavy Border', style: 'border: 4px solid #fff', desc: 'contained' },
+  { label: 'Broken Edge', style: 'border: 2px dashed #888', desc: 'open, loose' },
+  { label: 'No Frame', style: 'border: none', desc: 'unbounded' },
+  { label: 'Double Line', style: 'outline: 2px solid #aaa; border: 2px solid #555', desc: 'layered' },
+  { label: 'Soft Glow', style: 'box-shadow: 0 0 12px rgba(200,245,62,0.4)', desc: 'radiant' },
+];
+
+// Word pairs — each choice loads toward a dimension
+const WORD_SETS = [
+  { q: 'Which word feels heavier?', opts: [['STONE','tactile, grounded'],['ECHO','resonant, delayed'],['SHARD','broken, sharp'],['VEIL','hidden, soft']] },
+  { q: 'What do you want more of right now?', opts: [['SILENCE','absence of noise'],['TEXTURE','something to feel'],['MOMENTUM','forward motion'],['DISTANCE','space from things']] },
+  { q: 'Pick the word that makes you inhale.', opts: [['DEPTH','vertical pull'],['SURFACE','what is visible'],['HORIZON','where things meet'],['ROOT','what holds']] },
+  { q: 'Which word feels most like you?', opts: [['STRUCTURE','organized, planned'],['IMPULSE','reactive, immediate'],['PATTERN','recurring, reliable'],['DRIFT','unanchored, free']] },
+  { q: 'Which word creates unease?', opts: [['INFINITE','no boundaries'],['FINITE','everything ends'],['REPEAT','loop, no escape'],['ALONE','disconnected']] },
+  { q: 'Choose a word for Saturday morning.', opts: [['QUIET','stillness, empty calendar'],['RITUAL','structured start'],['WANDER','no plan, move'],['MAKE','create something']] },
+  { q: 'Which word feels most physical?', opts: [['PRESSURE','weight, force'],['WARMTH','heat, comfort'],['COLD','crisp, detached'],['EDGE','boundary, sharpness']] },
+  { q: 'Which word would you carve into stone?', opts: [['REMEMBER','past matters'],['BUILD','action, future'],['TRUTH','absolute, unchanging'],['NOW','only the present']] },
+  { q: 'Pick the word that feels like home.', opts: [['RETURN','familiar, coming back'],['ARRIVE','new, fresh start'],['STAY','stable, settled'],['MOVE','always in motion']] },
+  { q: 'Which word scares you least?', opts: [['CHAOS','unpredictable, wild'],['ORDER','rigid, controlled'],['VOID','empty, formless'],['CROWD','too many, loud']] },
+];
+
+const SCENE_SETS = [
+  { q: 'You are standing somewhere. Where?', opts: [['Desert at noon','vast, harsh, bright'],['Forest at dusk','layered, dimming, alive'],['Ocean edge','boundary, constant motion'],['City rooftop','above, contained chaos']] },
+  { q: 'Which view would you sit with for an hour?', opts: [['Mountains in fog','hidden, patient'],['Flat open plains','exposed, infinite'],['Dense jungle floor','close, textured'],['Empty room with window','simple, waiting']] },
+  { q: 'What kind of light are you drawn to?', opts: [['Hard direct sun','clarity, no hiding'],['Diffused grey sky','even, muted, calm'],['Golden dusk','short, precious, warm'],['Single lamp in dark','focused, intimate']] },
+  { q: 'Which place do you trust most?', opts: [['Underground','protected, hidden'],['Elevated, high up','perspective, removed'],['At water level','grounded, flowing'],['In motion, no fixed point','free, transient']] },
+];
+
+const SOUND_SETS = [
+  { q: 'Which sound texture do you prefer?', opts: [['White noise','constant, undifferentiated'],['Single tone, long','pure, sustained'],['Polyrhythm','complex, layered beats'],['Total silence','absence as sound']] },
+  { q: 'Which sound feels most honest?', opts: [['Cracking wood','structural, irreversible'],['Distant thunder','approaching, inevitable'],['Running water','continuous, neutral'],['Breath','intimate, close']] },
+  { q: 'What music would your instincts write?', opts: [['Minimalist drone','unchanging, meditative'],['Complex orchestral','building, multi-layered'],['Stripped acoustic','raw, personal'],['Electronic pulse','mechanical, driving']] },
+  { q: 'You need to focus. What plays?', opts: [['Nothing','silence is structure'],['Ambient hum','texture without distraction'],['Familiar music','memory as anchor'],['Nature sounds','biological, grounding']] },
+];
+
+const MOTION_SETS = [
+  { q: 'How do you prefer to move through a city?', opts: [['Directly, fastest path','efficiency, goal'],['Wandering, no route','discovery, open'],['Familiar streets only','safe, known'],['Elevated, elevated view','removed observer']] },
+  { q: 'Which motion best describes your thinking?', opts: [['Drilling down','deep, singular focus'],['Expanding outward','broad, associative'],['Oscillating back/forth','comparative, uncertain'],['Spiraling inward','recursive, self-referential']] },
+  { q: 'Pick the motion that relaxes you.', opts: [['Rocking, regular rhythm','soothing, predictable'],['Falling, letting go','surrender, free fall'],['Still, no movement','quiet, stable'],['Pacing, controlled loop','processing, releasing']] },
+];
+
+// Build 500 questions pool
+function buildQuestionPool() {
+  const pool = [];
+  // 50 color questions
+  for (let i = 0; i < 50; i++) {
+    const colorSet = shuffle([...COLORS]).slice(0, 4);
+    const prompts = [
+      'Which color feels closest to your mood right now?',
+      'Pick the color you\'d paint a room you think in.',
+      'Which color would you want to disappear into?',
+      'Choose the color that feels most foreign to you.',
+      'Which color would you give to someone you trust?',
+    ];
+    pool.push({
+      type: 'color',
+      category: 'COLOR INSTINCT',
+      text: prompts[i % prompts.length],
+      options: colorSet.map(c => ({
+        icon: '', label: c.label,
+        sub: '', swatchColor: c.hex, dim: c.dim
+      }))
+    });
+  }
+  // 50 shape questions
+  for (let i = 0; i < 50; i++) {
+    const shapeSet = shuffle([...SHAPES]).slice(0, 4);
+    const prompts = [
+      'Which shape would you trust to hold something precious?',
+      'Pick the shape that best describes how you think.',
+      'Which shape makes you feel safe?',
+      'Choose the shape you\'d put at the center of a room.',
+      'Which shape would you trace in sand?',
+    ];
+    pool.push({
+      type: 'shape',
+      category: 'SHAPE PREFERENCE',
+      text: prompts[i % prompts.length],
+      options: shapeSet.map(s => ({
+        icon: s.icon, label: s.label, sub: s.desc, dim: s.dim
+      }))
+    });
+  }
+  // 40 frame questions
+  for (let i = 0; i < 40; i++) {
+    const frameSet = shuffle([...FRAME_TYPES]).slice(0, 4);
+    const prompts = [
+      'Pick the frame you\'d put your most important memory in.',
+      'Which frame feels most like your personal boundary?',
+      'How would you contain something you love?',
+    ];
+    pool.push({
+      type: 'frame',
+      category: 'FRAME SELECTION',
+      text: prompts[i % prompts.length],
+      options: frameSet.map((f, fi) => ({
+        icon: '▪', label: f.label, sub: f.desc, dim: fi % 4
+      }))
+    });
+  }
+  // Word sets: 100 q
+  const wordExpanded = [];
+  for (let i = 0; i < 100; i++) wordExpanded.push(WORD_SETS[i % WORD_SETS.length]);
+  wordExpanded.forEach(ws => {
+    pool.push({
+      type: 'choice',
+      category: 'WORD RESONANCE',
+      text: ws.q,
+      options: ws.opts.map((o, i) => ({ icon: '', label: o[0], sub: o[1], dim: i % 4 }))
+    });
+  });
+  // Scene sets: 80 q
+  for (let i = 0; i < 80; i++) {
+    const ss = SCENE_SETS[i % SCENE_SETS.length];
+    pool.push({
+      type: 'choice', category: 'SCENE PERCEPTION', text: ss.q,
+      options: ss.opts.map((o, j) => ({ icon: '', label: o[0], sub: o[1], dim: j % 4 }))
+    });
+  }
+  // Sound sets: 80 q
+  for (let i = 0; i < 80; i++) {
+    const ss = SOUND_SETS[i % SOUND_SETS.length];
+    pool.push({
+      type: 'choice', category: 'SOUND TEXTURE', text: ss.q,
+      options: ss.opts.map((o, j) => ({ icon: '', label: o[0], sub: o[1], dim: j % 4 }))
+    });
+  }
+  // Motion sets: 100 q
+  for (let i = 0; i < 100; i++) {
+    const ms = MOTION_SETS[i % MOTION_SETS.length];
+    pool.push({
+      type: 'choice', category: 'MOTION QUALITY', text: ms.q,
+      options: ms.opts.map((o, j) => ({ icon: '', label: o[0], sub: o[1], dim: j % 4 }))
+    });
+  }
+  return shuffle(pool);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ══════════════════════════════════════════════════════
+//  BOT PROFILE GENERATION (200 bots)
+// ══════════════════════════════════════════════════════
+const BOT_NAMES = [
+  'Arav','Bilha','Cassia','Dion','Elara','Finn','Gaia','Hiro','Isla','Juno',
+  'Kael','Lyra','Miro','Nola','Oryn','Peta','Quill','Reva','Seren','Tao',
+  'Uma','Vael','Wren','Xio','Yola','Zel','Asha','Brix','Cleo','Dara',
+  'Elio','Fae','Gus','Hera','Indy','Jett','Kira','Lev','Mira','Neo',
+  'Ona','Pip','Rex','Sky','Tev','Ula','Van','Wix','Xen','Yara',
+  'Zeph','Ace','Bay','Cal','Dawn','Echo','Flux','Gray','Hope','Ilex',
+  'Jade','Knox','Luna','Mars','Nyx','Oak','Pax','Quay','Rune','Sol',
+  'Tess','Uri','Vera','Ward','Xara','York','Zola','Aden','Beau','Cira',
+  'Dex','Elan','Faye','Glen','Haze','Iris','Jax','Kova','Lore','Mael',
+  'Nevi','Orin','Paen','Qara','Riel','Sael','Tova','Ulan','Vex','Wael',
+  'Xael','Yule','Zira','Abra','Bora','Cael','Dael','Eara','Faen','Gael',
+  'Hael','Iael','Jael','Koa','Lael','Mael','Nael','Oael','Pael','Qael',
+  'Rael','Soa','Tael','Uael','Vael','Woa','Xael2','Yael','Zoa','Abis',
+  'Bisa','Cisa','Disa','Eisa','Fisa','Gisa','Hisa','Iisa','Jisa','Kisa',
+  'Lisa','Misa','Nisa','Oisa','Pisa','Qisa','Risa','Sisa','Tisa','Uisa',
+  'Visa','Wisa','Xisa','Yisa','Zisa','Abo','Bova','Cova','Dova','Eova',
+  'Fova','Gova','Hova','Iova','Jova','Kova2','Lova','Mova','Nova','Oova',
+  'Pova','Qova','Rova','Sova','Tova2','Uova','Vova','Wova','Xova','Yova',
+  'Zova','Axe','Byte','Core','Dive','Else','Fold','Gate','Hash','Iter',
+  'Jump','Link','Mesh','Node','Open','Port','Quit','Read','Sort','Tree'
+];
+
+const CLUSTER_PROFILES = [
+  {
+    id: 0, name: 'INTUITIVE DEPTH',
+    color: '#1a8cff',
+    desc: 'Drawn to complexity, abstraction, and inner landscapes. Prefers immersive, layered experiences.',
+    keywords: ['depth', 'complexity', 'introspection', 'pattern'],
+    // Dimensional bias: prefers dim 1 options (spirals, blues, abstract)
+    bias: [0.1, 0.5, 0.2, 0.2], // [dim0, dim1, dim2, dim3]
+  },
+  {
+    id: 1, name: 'KINETIC EDGE',
+    color: '#ff3d6e',
+    desc: 'Energetic, action-oriented, reactive. Drawn to movement, contrast, and immediacy.',
+    keywords: ['motion', 'edge', 'contrast', 'impulse'],
+    bias: [0.15, 0.15, 0.55, 0.15],
+  },
+  {
+    id: 2, name: 'GROUNDED STRUCTURE',
+    color: '#c8f53e',
+    desc: 'Values stability, clarity, and defined boundaries. Prefers known patterns and reliable frameworks.',
+    keywords: ['structure', 'stability', 'clarity', 'root'],
+    bias: [0.5, 0.2, 0.15, 0.15],
+  },
+  {
+    id: 3, name: 'AMBIENT FLOW',
+    color: '#ff6b35',
+    desc: 'Soft, receptive, open to ambiguity. Drawn to warmth, comfort, and subtle textures.',
+    keywords: ['warmth', 'flow', 'softness', 'drift'],
+    bias: [0.15, 0.15, 0.15, 0.55],
+  },
+];
+
+function seededRand(seed) {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 4294967296;
+  };
+}
+
+function generateBots() {
+  const bots = [];
+  for (let i = 0; i < 200; i++) {
+    const rng = seededRand(i * 137 + 42);
+    // Assign cluster with some noise
+    const clusterIdx = Math.floor(i / 50); // 50 bots per cluster
+    const cluster = CLUSTER_PROFILES[clusterIdx];
+    const bias = [...cluster.bias];
+    // Add noise — some bots are borderline
+    const noiseAmt = 0.15 + rng() * 0.2;
+    const noiseDim = Math.floor(rng() * 4);
+    bias[noiseDim] += noiseAmt;
+    const total = bias.reduce((a,b)=>a+b,0);
+    const normBias = bias.map(b => b / total);
+
+    // Generate 500 answers as dimension votes
+    const answers = [];
+    for (let q = 0; q < 500; q++) {
+      // Weighted random choice of dimension
+      const r = rng();
+      let cum = 0;
+      let dim = 0;
+      for (let d = 0; d < 4; d++) {
+        cum += normBias[d];
+        if (r < cum) { dim = d; break; }
+      }
+      answers.push(dim);
+    }
+
+    // Compute 4D feature vector from answers
+    const counts = [0,0,0,0];
+    answers.forEach(a => counts[a]++);
+    const total2 = counts.reduce((a,b)=>a+b,0);
+    const features = counts.map(c => c / total2);
+
+    // Project to 2D with some scatter
+    const cx = (features[2] - features[0]);
+    const cy = (features[1] - features[3]);
+    // Add per-bot scatter
+    const scatter = 0.15;
+    const x = Math.max(-1, Math.min(1, cx + (rng()-0.5)*scatter*2));
+    const y = Math.max(-1, Math.min(1, cy + (rng()-0.5)*scatter*2));
+
+    bots.push({
+      id: i,
+      name: BOT_NAMES[i] || `Bot${i}`,
+      clusterIdx,
+      features,
+      x, y,
+      answers,
+    });
+  }
+  return bots;
+}
+
+// ══════════════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════════════
+let questionPool = [];
+let currentQIndex = 0;
+let sessionAnswers = [];
+let timerInterval = null;
+let timerValue = 10;
+let bots = [];
+let userNode = null;
+const QUESTIONS_PER_SESSION = 20;
+const SESSION_TIME = 20;
+
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startQuiz() {
+  questionPool = buildQuestionPool();
+  currentQIndex = 0;
+  sessionAnswers = [];
+  buildDayChips();
+  showScreen('screen-question');
+  renderQuestion();
+}
+
+function skipToCompass() {
+  bots = generateBots();
+  // Simulate user in the middle
+  const rng = seededRand(999);
+  userNode = {
+    id: 200, name: 'YOU', clusterIdx: Math.floor(rng()*4),
+    x: (rng()-0.5)*1.4, y: (rng()-0.5)*1.4,
+    features: [0.25,0.25,0.25,0.25],
+    isUser: true
+  };
+  showScreen('screen-compass');
+  buildCompass();
+}
+
+function buildDayChips() {
+  const el = document.getElementById('day-chips');
+  el.innerHTML = '';
+  for (let d = 1; d <= 20; d++) {
+    const chip = document.createElement('div');
+    chip.className = 'day-chip' + (d === 1 ? ' active' : '');
+    chip.textContent = d;
+    el.appendChild(chip);
+  }
+}
+
+// ══════════════════════════════════════════════════════
+//  QUESTION RENDERING
+// ══════════════════════════════════════════════════════
+function renderQuestion() {
+  if (currentQIndex >= QUESTIONS_PER_SESSION) {
+    finishSession();
+    return;
+  }
+  const q = questionPool[currentQIndex];
+  const pct = (currentQIndex / QUESTIONS_PER_SESSION) * 100;
+
+  document.getElementById('q-progress-bar').style.width = pct + '%';
+  document.getElementById('q-counter').textContent =
+    String(currentQIndex + 1).padStart(2, '0') + ' / ' + QUESTIONS_PER_SESSION;
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  const optContainer = document.getElementById('q-options');
+  optContainer.innerHTML = '';
+
+  q.options.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'q-option';
+    div.dataset.dim = opt.dim;
+    div.dataset.idx = i;
+
+    let inner = `<span class="opt-letter">${String.fromCharCode(65+i)}</span>`;
+
+    if (opt.swatchColor) {
+      inner += `<span class="color-swatch" style="background:${opt.swatchColor}"></span>`;
+    } else if (opt.icon) {
+      inner += `<span class="opt-icon">${opt.icon}</span>`;
+    }
+
+    inner += `<div class="opt-text">${opt.label}</div>`;
+    if (opt.sub) inner += `<div class="opt-sub">${opt.sub}</div>`;
+
+    div.innerHTML = inner;
+    div.addEventListener('click', () => selectOption(div, opt.dim));
+    optContainer.appendChild(div);
+  });
+
+  const content = document.getElementById('q-content');
+  content.classList.remove('q-exit');
+  content.classList.add('q-enter');
+
+  startTimer();
+}
+
+function selectOption(el, dim) {
+  if (!el.classList.contains('timeout')) {
+    document.querySelectorAll('.q-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    sessionAnswers.push(dim);
+    clearInterval(timerInterval);
+    setTimeout(() => nextQuestion(), 350);
+  }
+}
+
+function nextQuestion() {
+  currentQIndex++;
+  const content = document.getElementById('q-content');
+  content.classList.add('q-exit');
+  setTimeout(() => {
+    content.classList.remove('q-exit');
+    renderQuestion();
+  }, 200);
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerValue = SESSION_TIME;
+  updateTimerDisplay();
+
+  timerInterval = setInterval(() => {
+    timerValue--;
+    updateTimerDisplay();
+    if (timerValue <= 0) {
+      clearInterval(timerInterval);
+      timeoutQuestion();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  document.getElementById('timer-text').textContent = timerValue;
+  const ring = document.getElementById('ring-fill');
+  const pct = timerValue / SESSION_TIME;
+  const circumference = 138;
+  ring.style.strokeDashoffset = circumference * (1 - pct);
+  if (timerValue <= 5) {
+    ring.style.stroke = 'var(--pink)';
+    document.getElementById('timer-text').style.color = 'var(--pink)';
+  } else if (timerValue <= 10) {
+    ring.style.stroke = 'var(--orange)';
+    document.getElementById('timer-text').style.color = 'var(--orange)';
+  } else {
+    ring.style.stroke = 'var(--acid)';
+    document.getElementById('timer-text').style.color = 'var(--white)';
+  }
+}
+
+function timeoutQuestion() {
+  const flash = document.getElementById('timeout-flash');
+  flash.classList.add('show');
+  setTimeout(() => flash.classList.remove('show'), 300);
+  document.querySelectorAll('.q-option').forEach(o => o.classList.add('timeout'));
+  // Record skip
+  sessionAnswers.push(-1);
+  setTimeout(() => nextQuestion(), 600);
+}
+
+// ══════════════════════════════════════════════════════
+//  SESSION COMPLETION + PROCESSING
+// ══════════════════════════════════════════════════════
+function finishSession() {
+  clearInterval(timerInterval);
+  showScreen('screen-processing');
+  runProcessing();
+}
+
+async function runProcessing() {
+  const steps = [
+    { id: 'proc-log-1', msg: 'Initializing 200 bot profiles...', delay: 400 },
+    { id: 'proc-log-2', msg: 'Generating response vectors (500 dims)...', delay: 700 },
+    { id: 'proc-log-3', msg: 'Running K-means clustering (k=4)...', delay: 800 },
+    { id: 'proc-log-4', msg: 'Projecting to 2D manifold (t-SNE simulation)...', delay: 900 },
+    { id: 'proc-log-5', msg: 'Placing nodes on compass...', delay: 600 },
+  ];
+
+  let elapsed = 0;
+  for (let i = 0; i < steps.length; i++) {
+    await delay(elapsed);
+    document.getElementById(steps[i].id).classList.add('active');
+    const targetPct = ((i+1)/steps.length)*100;
+    animateBar(targetPct);
+    document.getElementById('proc-pct').textContent = Math.round(targetPct) + '%';
+    elapsed = steps[i].delay;
+  }
+  await delay(elapsed + 400);
+
+  // Generate bots + place user
+  bots = generateBots();
+  computeUserPosition();
+  showScreen('screen-compass');
+  buildCompass();
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function animateBar(target) {
+  const bar = document.getElementById('proc-bar');
+  let current = parseFloat(bar.style.width) || 0;
+  const step = (target - current) / 20;
+  let count = 0;
+  const iv = setInterval(() => {
+    current += step;
+    bar.style.width = current + '%';
+    if (++count >= 20) clearInterval(iv);
+  }, 15);
+}
+
+function computeUserPosition() {
+  // Compute user feature vector from answers
+  const counts = [0,0,0,0];
+  let validAnswers = 0;
+  sessionAnswers.forEach(a => {
+    if (a >= 0) { counts[a]++; validAnswers++; }
+  });
+  const features = validAnswers > 0
+    ? counts.map(c => c / validAnswers)
+    : [0.25, 0.25, 0.25, 0.25];
+
+  const x = Math.max(-0.9, Math.min(0.9, features[2] - features[0]));
+  const y = Math.max(-0.9, Math.min(0.9, features[1] - features[3]));
+
+  // Find closest cluster
+  let bestCluster = 0, bestDist = Infinity;
+  CLUSTER_PROFILES.forEach((cp, idx) => {
+    const bias = cp.bias;
+    const dist = features.reduce((sum, f, i) => sum + Math.pow(f - bias[i], 2), 0);
+    if (dist < bestDist) { bestDist = dist; bestCluster = idx; }
+  });
+
+  userNode = {
+    id: 200, name: 'YOU', clusterIdx: bestCluster,
+    x, y, features, isUser: true
+  };
+}
+
+// ══════════════════════════════════════════════════════
+//  COMPASS RENDERING
+// ══════════════════════════════════════════════════════
+function buildCompass() {
+  // Cluster cards
+  const clusterEl = document.getElementById('cluster-cards');
+  clusterEl.innerHTML = '';
+  CLUSTER_PROFILES.forEach((cp, idx) => {
+    const count = bots.filter(b => b.clusterIdx === idx).length;
+    const card = document.createElement('div');
+    card.className = 'legend-card' + (userNode && userNode.clusterIdx === idx ? ' active' : '');
+    card.innerHTML = `
+      <div class="legend-name">
+        <span class="legend-dot" style="background:${cp.color}"></span>
+        ${cp.name}
+      </div>
+      <div class="legend-desc">${cp.desc}</div>
+      <div class="legend-count">${count + (userNode&&userNode.clusterIdx===idx?1:0)} nodes</div>
+    `;
+    clusterEl.appendChild(card);
+  });
+
+  // User cluster badge
+  if (userNode) {
+    const uc = CLUSTER_PROFILES[userNode.clusterIdx];
+    document.getElementById('user-cluster-badge').textContent = 'CLUSTER: ' + uc.name;
+    document.getElementById('user-cluster-badge').style.borderColor = uc.color;
+    document.getElementById('user-cluster-badge').style.color = uc.color;
+  }
+
+  // Matches
+  buildMatchList();
+
+  // Draw canvas
+  requestAnimationFrame(() => drawCanvas());
+
+  window.addEventListener('resize', drawCanvas);
+}
+
+function buildMatchList() {
+  const matchEl = document.getElementById('match-list');
+  matchEl.innerHTML = '';
+  if (!userNode) return;
+
+  // Cosine similarity to user
+  const userF = userNode.features;
+  const similarities = bots.map(b => {
+    const dot = b.features.reduce((sum, f, i) => sum + f * userF[i], 0);
+    const normB = Math.sqrt(b.features.reduce((s, f) => s + f*f, 0));
+    const normU = Math.sqrt(userF.reduce((s, f) => s + f*f, 0));
+    return { bot: b, sim: dot / (normB * normU) };
+  });
+  similarities.sort((a, b) => b.sim - a.sim);
+  const top5 = similarities.slice(0, 5);
+
+  top5.forEach(({ bot, sim }) => {
+    const cp = CLUSTER_PROFILES[bot.clusterIdx];
+    const card = document.createElement('div');
+    card.className = 'match-card';
+    card.innerHTML = `
+      <div class="match-avatar" style="background:${cp.color}">
+        ${bot.name.slice(0,2).toUpperCase()}
+      </div>
+      <div>
+        <div class="match-name">${bot.name}</div>
+        <div class="match-sim">Similarity: <span>${Math.round(sim*100)}%</span> · ${cp.name}</div>
+      </div>
+    `;
+    matchEl.appendChild(card);
+  });
+}
+
+function drawCanvas() {
+  const wrap = document.getElementById('compass-wrap');
+  const canvas = document.getElementById('compass-canvas');
+  const size = Math.min(wrap.clientWidth - 80, wrap.clientHeight - 80, 560);
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2, r = size / 2 - 20;
+
+  // Background
+  ctx.fillStyle = '#060608';
+  ctx.fillRect(0, 0, size, size);
+
+  // Grid rings
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * pct, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Axes
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r); ctx.stroke();
+
+  // Diagonal faint guides
+  ctx.strokeStyle = 'rgba(255,255,255,0.02)';
+  ctx.beginPath(); ctx.moveTo(cx - r*0.7, cy - r*0.7); ctx.lineTo(cx + r*0.7, cy + r*0.7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + r*0.7, cy - r*0.7); ctx.lineTo(cx - r*0.7, cy + r*0.7); ctx.stroke();
+
+  // Quadrant labels
+  const labels = [
+    { text: 'INTUITIVE\nDEPTH', x: cx - r*0.55, y: cy - r*0.7, align: 'center', color: '#1a8cff' },
+    { text: 'KINETIC\nEDGE', x: cx + r*0.6, y: cy - r*0.7, align: 'center', color: '#ff3d6e' },
+    { text: 'GROUNDED\nSTRUCTURE', x: cx - r*0.55, y: cy + r*0.75, align: 'center', color: '#c8f53e' },
+    { text: 'AMBIENT\nFLOW', x: cx + r*0.6, y: cy + r*0.75, align: 'center', color: '#ff6b35' },
+  ];
+  labels.forEach(l => {
+    ctx.font = '600 9px "Space Mono"';
+    ctx.fillStyle = l.color + '55';
+    ctx.textAlign = l.align;
+    l.text.split('\n').forEach((line, i) => {
+      ctx.fillText(line, l.x, l.y + i * 13);
+    });
+  });
+
+  // Axis labels
+  const axisLabels = [
+    { text: 'STRUCTURE', x: cx - r - 4, y: cy + 4, align: 'right' },
+    { text: 'KINETIC', x: cx + r + 4, y: cy + 4, align: 'left' },
+    { text: 'DEPTH', x: cx, y: cy - r - 6, align: 'center' },
+    { text: 'AMBIENT', x: cx, y: cy + r + 14, align: 'center' },
+  ];
+  axisLabels.forEach(al => {
+    ctx.font = '9px "Space Mono"';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.textAlign = al.align;
+    ctx.fillText(al.text, al.x, al.y);
+  });
+
+  // Outer circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Draw bot dots
+  const allNodes = userNode ? [...bots, userNode] : [...bots];
+  allNodes.forEach(node => {
+    if (node.isUser) return; // draw user last
+    const px = cx + node.x * r;
+    const py = cy + node.y * r;
+    const cp = CLUSTER_PROFILES[node.clusterIdx];
+
+    ctx.beginPath();
+    ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = cp.color + 'bb';
+    ctx.fill();
+  });
+
+  // Draw user node
+  if (userNode) {
+    const px = cx + userNode.x * r;
+    const py = cy + userNode.y * r;
+    const cp = CLUSTER_PROFILES[userNode.clusterIdx];
+
+    // Glow
+    const grd = ctx.createRadialGradient(px, py, 0, px, py, 20);
+    grd.addColorStop(0, cp.color + '44');
+    grd.addColorStop(1, 'transparent');
+    ctx.beginPath();
+    ctx.arc(px, py, 20, 0, Math.PI * 2);
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Draw top matches connections
+    const userF = userNode.features;
+    const similarities = bots.map(b => {
+      const dot = b.features.reduce((sum, f, i) => sum + f * userF[i], 0);
+      const normB = Math.sqrt(b.features.reduce((s, f) => s + f*f, 0));
+      const normU = Math.sqrt(userF.reduce((s, f) => s + f*f, 0));
+      return { bot: b, sim: dot / (normB * normU) };
+    });
+    similarities.sort((a, b) => b.sim - a.sim);
+    similarities.slice(0, 5).forEach(({ bot, sim }) => {
+      const bpx = cx + bot.x * r;
+      const bpy = cy + bot.y * r;
+      ctx.beginPath();
+      ctx.moveTo(px, py);
+      ctx.lineTo(bpx, bpy);
+      ctx.strokeStyle = cp.color + Math.round(sim*60).toString(16).padStart(2,'0');
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    // User dot
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fillStyle = cp.color;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px, py, 11, 0, Math.PI * 2);
+    ctx.strokeStyle = cp.color;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // YOU label
+    ctx.font = 'bold 10px "Syne"';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText('YOU', px, py - 16);
+  }
+
+  // Compass tick marks
+  for (let deg = 0; deg < 360; deg += 5) {
+    const angle = (deg * Math.PI) / 180;
+    const isMain = deg % 90 === 0;
+    const isMid = deg % 45 === 0;
+    const len = isMain ? 12 : isMid ? 8 : 4;
+    const x1 = cx + (r - 1) * Math.cos(angle);
+    const y1 = cy + (r - 1) * Math.sin(angle);
+    const x2 = cx + (r - len) * Math.cos(angle);
+    const y2 = cy + (r - len) * Math.sin(angle);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = isMain ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = isMain ? 1.5 : 0.5;
+    ctx.stroke();
+  }
+
+  // Hover/tooltip logic
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const tooltip = document.getElementById('tooltip');
+    let found = null;
+    const allN = userNode ? [...bots, userNode] : bots;
+    allN.forEach(node => {
+      const px = cx + node.x * r;
+      const py = cy + node.y * r;
+      const dist = Math.sqrt((mx - px)**2 + (my - py)**2);
+      if (dist < 10) found = node;
+    });
+    if (found) {
+      const cp = CLUSTER_PROFILES[found.clusterIdx];
+      document.getElementById('tt-name').textContent = found.name + (found.isUser ? ' ★' : '');
+      document.getElementById('tt-name').style.color = cp.color;
+      document.getElementById('tt-cluster').textContent = cp.name;
+      if (!found.isUser && userNode) {
+        const dot = found.features.reduce((sum, f, i) => sum + f * userNode.features[i], 0);
+        const n1 = Math.sqrt(found.features.reduce((s, f) => s + f*f, 0));
+        const n2 = Math.sqrt(userNode.features.reduce((s, f) => s + f*f, 0));
+        const sim = Math.round((dot / (n1 * n2)) * 100);
+        document.getElementById('tt-sim').textContent = `Similarity to you: ${sim}%`;
+      } else {
+        document.getElementById('tt-sim').textContent = '';
+      }
+      tooltip.style.left = (e.clientX + 12) + 'px';
+      tooltip.style.top = (e.clientY - 10) + 'px';
+      tooltip.classList.add('show');
+    } else {
+      tooltip.classList.remove('show');
+    }
+  };
+  canvas.onmouseleave = () => document.getElementById('tooltip').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  const screen = document.querySelector('.screen.active');
+  if (!screen) return;
+  if (screen.id === 'screen-question') {
+    const keys = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, 'A':0,'B':1,'C':2,'D':3 };
+    if (e.key in keys) {
+      const opts = document.querySelectorAll('.q-option:not(.timeout)');
+      if (opts[keys[e.key]]) {
+        const opt = opts[keys[e.key]];
+        const dim = parseInt(opt.dataset.dim);
+        selectOption(opt, dim);
+      }
+    }
+    if (e.key === 'Enter') timeoutQuestion();
+  }
+});
+
+// Mouse parallax on question screen
+document.addEventListener('mousemove', (e) => {
+  const pct = document.getElementById('q-bg-pulse');
+  if (pct) {
+    pct.style.setProperty('--mx', (e.clientX / window.innerWidth * 100) + '%');
+    pct.style.setProperty('--my', (e.clientY / window.innerHeight * 100) + '%');
+  }
+});
+</script>
+</body>
+</html>
