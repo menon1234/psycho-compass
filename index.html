@@ -3,153 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>COMPASS — Psychographic Cluster Engine</title>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <title>Psycho Compass</title>
+  <meta http-equiv="refresh" content="0; url=./psycho-compass.html">
+  <link rel="canonical" href="./psycho-compass.html">
+  <script>
+    window.location.replace("./psycho-compass.html");
+  </script>
 </head>
 <body>
-
-<!-- TIMEOUT FLASH -->
-<div class="timeout-flash" id="timeout-flash"></div>
-
-<!-- TOOLTIP -->
-<div class="tooltip" id="tooltip">
-  <div class="tooltip-name" id="tt-name"></div>
-  <div class="tooltip-cluster" id="tt-cluster"></div>
-  <div class="tooltip-sim" id="tt-sim"></div>
-</div>
-
-<!-- ══════════════ INTRO SCREEN ══════════════ -->
-<div class="screen active" id="screen-intro">
-  <div class="grid-bg"></div>
-  <div class="noise"></div>
-  <div class="intro-content">
-    <div class="intro-label">◈ Psychographic Mapping Engine v0.1</div>
-    <h1 class="intro-title">COM<span>PASS</span></h1>
-    <p class="intro-desc">
-      Answer 20 abstract questions per day. Each choice reveals something about how<br>
-      your mind processes reality — color, shape, instinct, pattern. Over days,<br>
-      we cluster your responses and map you to others who share your frequency.
-    </p>
-    <div>
-      <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
-      <button class="btn-secondary" onclick="skipToCompass()">VIEW COMPASS →</button>
-    </div>
-    <div class="stats-row">
-      <div class="stat">
-        <div class="stat-num">200</div>
-        <div class="stat-label">Active nodes</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">500</div>
-        <div class="stat-label">Questions pool</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">4</div>
-        <div class="stat-label">Clusters</div>
-      </div>
-      <div class="stat">
-        <div class="stat-num">10s</div>
-        <div class="stat-label">Per question</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════ QUESTION SCREEN ══════════════ -->
-<div class="screen" id="screen-question">
-  <div class="q-bg-pulse" id="q-bg-pulse"></div>
-  <div class="q-container">
-    <div class="q-header">
-      <div class="q-progress-wrap">
-        <div class="q-progress-bar" id="q-progress-bar"></div>
-      </div>
-      <div class="q-counter" id="q-counter">01 / 20</div>
-      <div class="q-timer-ring" id="timer-ring">
-        <svg viewBox="0 0 48 48" width="56" height="56">
-          <circle class="ring-bg" cx="24" cy="24" r="22"/>
-          <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="22"/>
-        </svg>
-        <div class="q-timer-text" id="timer-text">10</div>
-      </div>
-    </div>
-    <div id="q-content" class="q-enter">
-      <div class="q-category" id="q-category">VISUAL PREFERENCE</div>
-      <div class="q-text" id="q-text">Which color speaks to you right now?</div>
-      <div class="q-options" id="q-options"></div>
-    </div>
-    <div style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center;">
-      <div class="day-chips" id="day-chips"></div>
-      <div style="font-size: 10px; color: #333; letter-spacing: 2px;">SKIP WITH ↵</div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════ PROCESSING SCREEN ══════════════ -->
-<div class="screen" id="screen-processing">
-  <div class="processing-title">◈ CLUSTERING RESPONSES</div>
-  <div class="processing-visual">
-    <div class="proc-ring"></div>
-    <div class="proc-ring"></div>
-    <div class="proc-ring"></div>
-    <div class="proc-ring"></div>
-    <div class="proc-center" id="proc-pct">0%</div>
-  </div>
-  <div id="proc-log-1" class="proc-log">Initializing 200 bot profiles...</div>
-  <div id="proc-log-2" class="proc-log">Generating response vectors...</div>
-  <div id="proc-log-3" class="proc-log">Running K-means clustering...</div>
-  <div id="proc-log-4" class="proc-log">Projecting to 2D manifold (UMAP)...</div>
-  <div id="proc-log-5" class="proc-log">Placing nodes on compass...</div>
-  <div class="proc-bar-wrap">
-    <div class="proc-bar" id="proc-bar"></div>
-  </div>
-</div>
-
-<!-- ══════════════ COMPASS SCREEN ══════════════ -->
-<div class="screen" id="screen-compass">
-  <div class="compass-header">
-    <div>
-      <div style="font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase;margin-bottom:4px;">◈ Session complete — Day 1 of 20</div>
-      <div class="compass-title">YOUR COM<span>PASS</span></div>
-    </div>
-    <div style="display:flex;gap:12px;align-items:center;">
-      <div id="user-cluster-badge" style="padding:8px 20px;font-size:11px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--acid);color:var(--acid);">CLUSTER: —</div>
-      <button class="btn-secondary" onclick="showScreen('screen-intro')" style="margin:0;">NEW SESSION</button>
-    </div>
-  </div>
-  <div class="compass-layout">
-    <div class="compass-wrap" id="compass-wrap">
-      <canvas id="compass-canvas"></canvas>
-    </div>
-    <div class="compass-legend" id="compass-legend" style="overflow-y:auto;max-height:80vh;">
-      <div class="sidebar-section">
-        <div class="sidebar-title">Cluster Map</div>
-        <div id="cluster-cards"></div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Your Matches</div>
-        <div id="match-list"></div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-title">Progress</div>
-        <div style="font-size:11px;color:#666;margin-bottom:12px;">Cluster confidence improves with more sessions</div>
-        <div style="display:flex;gap:4px;">
-          <div style="flex:1;height:4px;background:var(--acid);border-radius:2px;"></div>
-          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
-          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
-          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
-          <div style="flex:1;height:4px;background:var(--border);border-radius:2px;"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:#444;">
-          <span>D1</span><span>D5</span><span>D10</span><span>D15</span><span>D20</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script src="data.js"></script>
-<script src="engine.js"></script>
-<script src="app.js"></script>
+  <p>
+    Redirecting to <a href="./psycho-compass.html">psycho-compass.html</a>...
+  </p>
 </body>
 </html>
