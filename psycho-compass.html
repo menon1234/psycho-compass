@@ -62,7 +62,7 @@
     pointer-events: none;
   }
 
-  .intro-content { position: relative; z-index: 1; max-width: 700px; padding: 40px; }
+  .intro-content { position: relative; z-index: 1; max-width: 700px; padding: 40px; width: 100%; text-align: center; }
 
   .intro-label {
     font-size: 11px;
@@ -81,11 +81,125 @@
     line-height: 0.9;
     letter-spacing: -4px;
     margin-bottom: 32px;
+    padding-bottom: 1.3em;
+    text-align: center;
+    display: flex;
+    justify-content: center;
     opacity: 0;
     animation: fadeUp 0.8s 0.4s forwards;
   }
 
-  .intro-title span { color: var(--acid); }
+  .intro-title span { color: var(--white); }
+
+  .compound-lockup {
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  .intro-title .o-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: center;
+    width: 0.92em;
+    margin: 0 0.02em;
+    color: #cc2200;
+    overflow: visible;
+  }
+  .eye-svg {
+    height: 0.84em;
+    width: 0.84em;
+    display: inline-block;
+    vertical-align: top;
+    flex-shrink: 0;
+  }
+  .eye-sub {
+    position: absolute;
+    top: calc(100% + 0.02em);
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--acid);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.04em;
+    font-size: 0.46em;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: visible;
+  }
+  .eye-side-left,
+  .eye-side-right,
+  .eye-sub .y-anchor {
+    display: block;
+    line-height: 1;
+  }
+  .eye-side-left,
+  .eye-side-right {
+    font-size: 0.82em;
+    transform: translateY(0.24em);
+  }
+  .eye-side-right {
+    transform: translateY(0.24em) scaleX(-1);
+  }
+  .eye-sub .y-anchor {
+    position: relative;
+    font-size: 1.72em;
+    font-weight: 700;
+    transform: translateY(0.04em);
+  }
+  .eye-sub .y-anchor::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0.22em;
+    width: 0.92em;
+    height: 0.18em;
+    border-top: 0.035em solid #050505;
+    border-radius: 999px;
+    transform: translateX(-50%);
+  }
+  .eye-sub .y-anchor::after {
+    content: none;
+  }
+  .catapult-belt {
+    position: absolute;
+    left: 50%;
+    top: 0.17em;
+    width: 0.16em;
+    height: 0.16em;
+    border: 0.035em solid #050505;
+    border-radius: 50%;
+    background: transparent;
+    transform: translateX(-50%);
+  }
+
+  .bolt {
+    display: inline-block;
+    width: 0.45em;
+    height: 0.45em;
+    background: #cc2200;
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    align-self: center;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 0.08em;
+  }
+  .bolt::before {
+    content: '';
+    position: absolute;
+    width: 1.5px;
+    height: 3.2em;
+    background: linear-gradient(to top, #cc2200, #cc220055);
+    bottom: 50%;
+    left: 50%;
+    margin-left: -0.75px;
+    transform-origin: bottom center;
+  }
+  .bolt-left::before { transform: rotate(17deg); }
+  .bolt-right::before { transform: rotate(-17deg); }
 
   .intro-desc {
     font-size: 13px;
@@ -659,7 +773,26 @@
   <div class="noise"></div>
   <div class="intro-content">
     <div class="intro-label">◈ Psychographic Mapping Engine v0.1</div>
-    <h1 class="intro-title" style="text-align:center;">Compound<span>EYE</span></h1>
+    <h1 class="intro-title">
+      <span class="compound-lockup">
+        <span>Comp</span>
+        <span class="o-wrapper">
+          <svg class="eye-svg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="2"/>
+            <circle cx="22" cy="22" r="13" stroke="currentColor" stroke-width="2"/>
+            <circle cx="22" cy="22" r="6" fill="currentColor"/>
+          </svg>
+          <span class="eye-sub">
+            <span class="bolt bolt-left" aria-hidden="true"></span>
+            <span class="eye-side-left">E</span>
+            <span class="y-anchor">Y<span class="catapult-belt" aria-hidden="true"></span></span>
+            <span class="eye-side-right">E</span>
+            <span class="bolt bolt-right" aria-hidden="true"></span>
+          </span>
+        </span>
+        <span>und</span>
+      </span>
+    </h1>
     <p class="intro-desc">
       Answer 20 abstract questions per day. Each choice reveals something about how<br>
       your mind processes reality — color, shape, instinct, pattern. Over days,<br>
