@@ -927,10 +927,16 @@
 </div>
 
 <script>
-const db = supabase.createClient(
-  'https://hjbywpwlfxrwfhngtxek.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqYnl3cHdsZnhyd2Zobmd0eGVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODc4NTcsImV4cCI6MjA5MjQ2Mzg1N30.kQPDRub7BubOP1Trlq8NlExAZAIi19mBgvjRgpdcNk8'
-)
+let db;
+try {
+  db = supabase.createClient(
+    'https://hjbywpwlfxrwfhngtxek.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqYnl3cHdsZnhyd2Zobmd0eGVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4ODc4NTcsImV4cCI6MjA5MjQ2Mzg1N30.kQPDRub7BubOP1Trlq8NlExAZAIi19mBgvjRgpdcNk8'
+  );
+  console.log('Supabase ready');
+} catch(e) {
+  console.error('Supabase init failed:', e);
+}
 
 // ══════════════════════════════════════════════════════
 //  DATA: 500 QUESTIONS (across categories)
@@ -1443,13 +1449,21 @@ async function runProcessing() {
   bots = generateBots();
   computeUserPosition();
 
-  db.from('sessions').insert({
-    answers: sessionAnswers,
-    cluster_idx: userNode.clusterIdx,
-    archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
-    x: userNode.x,
-    y: userNode.y
-  });
+  console.log('Saving session...', userNode);
+  if (db) {
+    db.from('sessions').insert({
+      answers: sessionAnswers,
+      cluster_idx: userNode.clusterIdx,
+      archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
+      x: userNode.x,
+      y: userNode.y
+    }).then(({ error }) => {
+      if (error) console.error('Supabase error:', error);
+      else console.log('Session saved successfully');
+    });
+  } else {
+    console.error('db not initialised');
+  }
 
   showScreen('screen-compass');
   buildCompass();
