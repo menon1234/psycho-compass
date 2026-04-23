@@ -1259,6 +1259,7 @@
         <div class="sidebar-title">Your Archive</div>
         <div id="history-summary" class="history-summary">Sign in to load your previous sessions.</div>
         <div id="history-list" class="history-list"></div>
+        <button class="nd-close" onclick="exportLocalSessions()" style="margin-top:10px">↓ Export sessions JSON</button>
       </div>
 
       <div class="sidebar-section">
@@ -1748,6 +1749,21 @@ function loadLocalSessions() {
     localSessions = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
   } catch (e) {
     localSessions = [];
+  }
+}
+
+function exportLocalSessions() {
+  try {
+    const data = localStorage.getItem(LOCAL_KEY) || '[]';
+    const blob = new Blob([data], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'psycho-compass-sessions.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Could not export: ' + e.message);
   }
 }
 
