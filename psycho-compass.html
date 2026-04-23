@@ -127,19 +127,55 @@
   @keyframes spinCW  { to { transform: rotate(360deg);  } }
   @keyframes spinCCW { to { transform: rotate(-360deg); } }
 
-  .btn-anon {
-    background: transparent;
-    color: var(--white);
-    border: 1px solid var(--white);
+  .name-dialog-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6,6,8,0.85);
+    backdrop-filter: blur(6px);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
   }
-  .btn-anon:hover { background: rgba(255,255,255,0.08); transform: translate(-2px,-2px); }
-  .anon-hint {
-    font-size: 10px;
-    color: #444;
-    letter-spacing: 1px;
+  .name-dialog-overlay.open { display: flex; }
+  .name-dialog {
+    background: #0e0e12;
+    border: 1px solid var(--border);
+    padding: 48px 40px;
+    max-width: 420px;
+    width: 90%;
     text-align: center;
-    margin-top: 8px;
+    clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
   }
+  .name-dialog-label {
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--acid);
+    margin-bottom: 16px;
+  }
+  .name-dialog-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    margin-bottom: 32px;
+    color: var(--white);
+  }
+  .name-dialog-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    padding: 12px 0;
+    margin-bottom: 32px;
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+  }
+  .name-dialog-input:focus { border-bottom-color: var(--acid); }
+  .name-dialog-input::placeholder { color: #333; }
   .eye-sub {
     position: absolute;
     top: calc(100% + 0.02em);
@@ -1018,41 +1054,8 @@
       we cluster your responses and map you to others who share your frequency.
     </p>
     <div class="intro-actions">
-      <div class="intro-buttons">
-        <div id="btn-logged-in" hidden>
-          <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
-        </div>
-        <div id="btn-logged-out">
-          <button class="btn-primary btn-anon" onclick="startQuiz()">START ANONYMOUS</button>
-          <div class="anon-hint">Register below to save your history</div>
-        </div>
-        <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
-      </div>
-      <div class="auth-panel">
-        <div class="auth-kicker">Account Sync</div>
-        <div class="auth-title">Save Your Pattern</div>
-        <div class="auth-copy" id="auth-copy">Create an account so every session is tied to you — log back in anytime to see your full history.</div>
-        <div class="auth-stack" id="auth-signed-out">
-          <form id="auth-form" class="auth-form">
-            <input class="auth-input" id="auth-name" type="text" placeholder="Name" autocomplete="name">
-            <input class="auth-input" id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
-            <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="current-password" minlength="6" required>
-            <button class="auth-submit" id="auth-submit" type="submit">Register Account</button>
-          </form>
-          <div class="auth-toggle-row">
-            <span class="auth-copy" id="auth-mode-copy">New here? Create an account to keep your session history.</span>
-            <button class="auth-link" id="auth-mode-toggle" type="button" onclick="toggleAuthMode()">Already have an account?</button>
-          </div>
-        </div>
-        <div class="auth-stack" id="auth-signed-in" hidden>
-          <div class="auth-user-row">
-            <div class="auth-user-badge" id="auth-user-email">Signed in</div>
-            <button class="auth-link" type="button" onclick="signOutUser()">Sign out</button>
-          </div>
-          <div class="auth-copy" id="auth-account-summary">Your next sessions will sync to your account archive.</div>
-        </div>
-        <div id="auth-feedback" class="auth-feedback"></div>
-      </div>
+      <button class="btn-primary" onclick="openNameDialog()">PLAY ANONYMOUS</button>
+      <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
     </div>
     <div class="stats-row">
       <div class="stat">
@@ -1181,6 +1184,18 @@
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- NAME DIALOG -->
+<div class="name-dialog-overlay" id="name-dialog-overlay" onclick="closeNameDialog(event)">
+  <div class="name-dialog">
+    <div class="name-dialog-label">◈ BEFORE WE BEGIN</div>
+    <div class="name-dialog-title">What do we call you?</div>
+    <form onsubmit="confirmNameAndStart(event)">
+      <input class="name-dialog-input" id="player-name-input" type="text" placeholder="Enter your name" autocomplete="off" maxlength="32" required>
+      <button class="btn-primary" type="submit">BEGIN →</button>
+    </form>
   </div>
 </div>
 
@@ -1781,12 +1796,31 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
+let playerName = '';
+
+function openNameDialog() {
+  document.getElementById('name-dialog-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('player-name-input').focus(), 50);
+}
+
+function closeNameDialog(e) {
+  if (e.target.id === 'name-dialog-overlay') {
+    document.getElementById('name-dialog-overlay').classList.remove('open');
+  }
+}
+
+function confirmNameAndStart(e) {
+  e.preventDefault();
+  playerName = document.getElementById('player-name-input').value.trim();
+  if (!playerName) return;
+  document.getElementById('name-dialog-overlay').classList.remove('open');
+  startQuiz();
+}
+
 function startQuiz() {
   questionPool = buildQuestionPool();
   currentQIndex = 0;
   sessionAnswers = [];
-  setSaveStatus('Save status: in progress...', '');
-  buildDayChips();
   showScreen('screen-question');
   renderQuestion();
 }
@@ -1983,7 +2017,8 @@ async function saveSessionToSupabase() {
     cluster_idx: userNode.clusterIdx,
     archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
     x: userNode.x,
-    y: userNode.y
+    y: userNode.y,
+    player_name: playerName || 'Anonymous'
   };
 
   if (currentUser) {
