@@ -18,6 +18,7 @@
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  [hidden] { display: none !important; }
 
   body {
     background: var(--black);
@@ -246,6 +247,155 @@
     clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
   }
   .btn-secondary:hover { background: rgba(200,245,62,0.1); }
+
+  .intro-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .intro-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  .intro-buttons .btn-secondary { margin-left: 0; }
+
+  .auth-panel {
+    width: min(100%, 620px);
+    padding: 22px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    text-align: left;
+    opacity: 0;
+    animation: fadeUp 0.8s 0.9s forwards;
+  }
+  .auth-kicker {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--acid);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .auth-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .auth-copy {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #8d8d96;
+  }
+  .auth-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 18px;
+  }
+  .btn-google,
+  .auth-submit {
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  .btn-google {
+    padding: 15px 18px;
+    background: var(--white);
+    color: var(--black);
+  }
+  .btn-google:hover,
+  .auth-submit:hover {
+    transform: translate(-2px, -2px);
+  }
+  .auth-divider {
+    position: relative;
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #6d6d75;
+    text-transform: uppercase;
+    margin: 4px 0;
+  }
+  .auth-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    border-top: 1px solid var(--border);
+  }
+  .auth-divider span {
+    position: relative;
+    padding: 0 12px;
+    background: var(--black);
+  }
+  .auth-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .auth-form .auth-submit {
+    grid-column: 1 / -1;
+    padding: 14px 18px;
+    background: var(--acid);
+    color: var(--black);
+  }
+  .auth-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    color: var(--white);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  .auth-input:focus {
+    border-color: var(--acid);
+  }
+  .auth-toggle-row,
+  .auth-user-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .auth-link {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--acid);
+    cursor: pointer;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .auth-link:hover { color: var(--white); }
+  .auth-feedback {
+    min-height: 18px;
+    font-size: 11px;
+    color: #777;
+  }
+  .auth-feedback.ok { color: var(--acid); }
+  .auth-feedback.error { color: var(--pink); }
+  .auth-user-badge {
+    padding: 10px 12px;
+    border: 1px solid rgba(200,245,62,0.3);
+    color: var(--white);
+    font-size: 11px;
+    word-break: break-all;
+  }
 
   .stats-row {
     display: flex;
@@ -647,6 +797,35 @@
   }
   .save-status.ok { color: var(--acid); }
   .save-status.error { color: var(--pink); }
+  .account-summary,
+  .history-summary {
+    font-size: 11px;
+    line-height: 1.6;
+    color: #8d8d96;
+  }
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .history-item {
+    padding: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.015);
+  }
+  .history-item-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .history-item-meta {
+    font-size: 10px;
+    color: #777;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
 
   .match-card {
     padding: 14px;
@@ -759,7 +938,12 @@
   @media (max-width: 768px) {
     .compass-layout { grid-template-columns: 1fr; }
     .q-options { grid-template-columns: 1fr; }
-    .stats-row { gap: 24px; }
+    .stats-row { gap: 24px; flex-wrap: wrap; justify-content: center; }
+    .auth-form { grid-template-columns: 1fr; }
+    .auth-toggle-row,
+    .auth-user-row,
+    .intro-buttons,
+    .compass-header { flex-direction: column; align-items: stretch; }
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -807,9 +991,37 @@
       your mind processes reality — color, shape, instinct, pattern. Over days,<br>
       we cluster your responses and map you to others who share your frequency.
     </p>
-    <div>
-      <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
-      <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
+    <div class="intro-actions">
+      <div class="intro-buttons">
+        <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
+        <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
+      </div>
+      <div class="auth-panel">
+        <div class="auth-kicker">Account Sync</div>
+        <div class="auth-title">Save Your Pattern</div>
+        <div class="auth-copy" id="auth-copy">Sign in with Google or create an account so every session is tied to you, not just the browser.</div>
+        <div class="auth-stack" id="auth-signed-out">
+          <button class="btn-google" type="button" onclick="signInWithGoogle()">Continue with Google</button>
+          <div class="auth-divider"><span>or use email</span></div>
+          <form id="auth-form" class="auth-form">
+            <input class="auth-input" id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
+            <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="current-password" minlength="6" required>
+            <button class="auth-submit" id="auth-submit" type="submit">Register Account</button>
+          </form>
+          <div class="auth-toggle-row">
+            <span class="auth-copy" id="auth-mode-copy">New here? Create an account to keep your session history.</span>
+            <button class="auth-link" id="auth-mode-toggle" type="button" onclick="toggleAuthMode()">Already have an account?</button>
+          </div>
+        </div>
+        <div class="auth-stack" id="auth-signed-in" hidden>
+          <div class="auth-user-row">
+            <div class="auth-user-badge" id="auth-user-email">Signed in</div>
+            <button class="auth-link" type="button" onclick="signOutUser()">Sign out</button>
+          </div>
+          <div class="auth-copy" id="auth-account-summary">Your next sessions will sync to your account archive.</div>
+        </div>
+        <div id="auth-feedback" class="auth-feedback"></div>
+      </div>
     </div>
     <div class="stats-row">
       <div class="stat">
@@ -913,6 +1125,17 @@
       <div class="sidebar-section">
         <div class="sidebar-title">Your Matches</div>
         <div id="match-list"></div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Account</div>
+        <div id="account-summary" class="account-summary">Guest mode. Sign in on the intro screen to sync sessions across visits.</div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Your Archive</div>
+        <div id="history-summary" class="history-summary">Sign in to load your previous sessions.</div>
+        <div id="history-list" class="history-list"></div>
       </div>
 
       <div class="sidebar-section">
@@ -1269,6 +1492,11 @@ let timerValue = 10;
 let bots = [];
 let userNode = null;
 let lastSaveStatus = { text: 'Save status: waiting for a completed session', state: '' };
+let currentUser = null;
+let userSessions = [];
+let userSessionCount = 0;
+let authMode = 'register';
+let historyLoadError = '';
 const QUESTIONS_PER_SESSION = 20;
 const SESSION_TIME = 20;
 
@@ -1278,6 +1506,247 @@ function setSaveStatus(text, state = '') {
   if (!el) return;
   el.textContent = text;
   el.className = 'save-status' + (state ? ` ${state}` : '');
+}
+
+function setAuthFeedback(text = '', state = '') {
+  const el = document.getElementById('auth-feedback');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'auth-feedback' + (state ? ` ${state}` : '');
+}
+
+function getAuthRedirectUrl() {
+  return window.location.origin + window.location.pathname;
+}
+
+function toggleAuthMode(forceMode) {
+  authMode = forceMode || (authMode === 'register' ? 'signin' : 'register');
+  updateAuthUI();
+}
+
+function updateAuthUI() {
+  const signedOut = document.getElementById('auth-signed-out');
+  const signedIn = document.getElementById('auth-signed-in');
+  const authCopy = document.getElementById('auth-copy');
+  const modeCopy = document.getElementById('auth-mode-copy');
+  const modeToggle = document.getElementById('auth-mode-toggle');
+  const submit = document.getElementById('auth-submit');
+  const userEmail = document.getElementById('auth-user-email');
+  const accountSummary = document.getElementById('auth-account-summary');
+  const accountPanel = document.getElementById('account-summary');
+
+  if (currentUser) {
+    signedOut.hidden = true;
+    signedIn.hidden = false;
+    authCopy.textContent = 'Signed in accounts sync sessions to Supabase so people can return to their map later.';
+    userEmail.textContent = currentUser.email || 'Signed in';
+    accountSummary.textContent = `Signed in as ${currentUser.email || 'your account'}. New sessions will attach to your archive automatically.`;
+    accountPanel.textContent = `Signed in as ${currentUser.email || 'your account'}. ${userSessionCount} tracked session${userSessionCount === 1 ? '' : 's'} loaded.`;
+    return;
+  }
+
+  signedOut.hidden = false;
+  signedIn.hidden = true;
+  submit.textContent = authMode === 'register' ? 'Register Account' : 'Sign In';
+  modeCopy.textContent = authMode === 'register'
+    ? 'New here? Create an account to keep your session history.'
+    : 'Already registered? Sign in to load your saved sessions.';
+  modeToggle.textContent = authMode === 'register'
+    ? 'Already have an account?'
+    : 'Need an account instead?';
+  authCopy.textContent = 'Sign in with Google or create an account so every session is tied to you, not just the browser.';
+  accountPanel.textContent = 'Guest mode. Sign in on the intro screen to sync sessions across visits.';
+}
+
+function formatSessionDate(value) {
+  return new Date(value).toLocaleString([], {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function renderHistoryPanel() {
+  const summary = document.getElementById('history-summary');
+  const list = document.getElementById('history-list');
+  if (!summary || !list) return;
+
+  list.innerHTML = '';
+
+  if (!currentUser) {
+    summary.textContent = 'Sign in to load your previous sessions and keep a persistent archive.';
+    return;
+  }
+
+  if (historyLoadError) {
+    summary.textContent = historyLoadError;
+    return;
+  }
+
+  if (!userSessions.length) {
+    summary.textContent = 'No tracked sessions yet. Finish one signed in session and it will appear here.';
+    return;
+  }
+
+  summary.textContent = `${userSessionCount} tracked session${userSessionCount === 1 ? '' : 's'} linked to ${currentUser.email || 'this account'}.`;
+
+  userSessions.slice(0, 6).forEach((session, index) => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `
+      <div class="history-item-title">Session ${userSessionCount - index} · ${session.archetype || 'Unclassified'}</div>
+      <div class="history-item-meta">${formatSessionDate(session.created_at)} · Cluster ${session.cluster_idx + 1}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+async function loadUserSessions() {
+  if (!db || !currentUser) {
+    userSessions = [];
+    userSessionCount = 0;
+    historyLoadError = '';
+    renderHistoryPanel();
+    return;
+  }
+
+  const { data, error, count } = await db
+    .from('sessions')
+    .select('id, created_at, archetype, cluster_idx', { count: 'exact' })
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(12);
+
+  if (error) {
+    userSessions = [];
+    userSessionCount = 0;
+    historyLoadError = /user_id/i.test(error.message || '')
+      ? 'History tracking needs the Supabase auth migration so sessions can be linked to users.'
+      : `Unable to load history: ${error.message}`;
+    renderHistoryPanel();
+    return;
+  }
+
+  userSessions = data || [];
+  userSessionCount = count || 0;
+  historyLoadError = '';
+  renderHistoryPanel();
+}
+
+async function syncCurrentUser(user) {
+  currentUser = user;
+  await loadUserSessions();
+  updateAuthUI();
+}
+
+async function initAuth() {
+  updateAuthUI();
+  renderHistoryPanel();
+
+  const form = document.getElementById('auth-form');
+  if (form) form.addEventListener('submit', handleAuthFormSubmit);
+
+  if (!db) {
+    setAuthFeedback('Supabase client failed to initialize.', 'error');
+    return;
+  }
+
+  const { data, error } = await db.auth.getSession();
+  if (error) {
+    setAuthFeedback(error.message, 'error');
+  }
+
+  await syncCurrentUser(data?.session?.user || null);
+
+  db.auth.onAuthStateChange((_event, session) => {
+    void syncCurrentUser(session?.user || null);
+  });
+}
+
+async function signInWithGoogle() {
+  if (!db) {
+    setAuthFeedback('Supabase client is unavailable right now.', 'error');
+    return;
+  }
+
+  setAuthFeedback('Redirecting to Google...', '');
+  const { error } = await db.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: getAuthRedirectUrl(),
+    },
+  });
+
+  if (error) {
+    setAuthFeedback(error.message, 'error');
+  }
+}
+
+async function handleAuthFormSubmit(event) {
+  event.preventDefault();
+
+  if (!db) {
+    setAuthFeedback('Supabase client is unavailable right now.', 'error');
+    return;
+  }
+
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+
+  if (!email || !password) {
+    setAuthFeedback('Email and password are both required.', 'error');
+    return;
+  }
+
+  setAuthFeedback(authMode === 'register' ? 'Creating your account...' : 'Signing you in...', '');
+
+  if (authMode === 'register') {
+    const { data, error } = await db.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: getAuthRedirectUrl(),
+      },
+    });
+
+    if (error) {
+      setAuthFeedback(error.message, 'error');
+      return;
+    }
+
+    if (data.session?.user) {
+      await syncCurrentUser(data.session.user);
+      setAuthFeedback('Account created. Your next session will sync automatically.', 'ok');
+    } else {
+      setAuthFeedback('Account created. Check your email to confirm the address before signing in.', 'ok');
+      toggleAuthMode('signin');
+    }
+    return;
+  }
+
+  const { data, error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    setAuthFeedback(error.message, 'error');
+    return;
+  }
+
+  await syncCurrentUser(data.user || data.session?.user || null);
+  setAuthFeedback('Signed in. Your archive is ready.', 'ok');
+}
+
+async function signOutUser() {
+  if (!db) return;
+  const { error } = await db.auth.signOut();
+  if (error) {
+    setAuthFeedback(error.message, 'error');
+    return;
+  }
+
+  document.getElementById('auth-form')?.reset();
+  setAuthFeedback('Signed out. You can still explore as a guest.', 'ok');
+  await syncCurrentUser(null);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1485,18 +1954,24 @@ async function saveSessionToSupabase() {
 
   setSaveStatus('Save status: saving session...', '');
 
-  const { error } = await db.from('sessions').insert({
+  const payload = {
     answers: sessionAnswers,
     cluster_idx: userNode.clusterIdx,
     archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
     x: userNode.x,
     y: userNode.y
-  });
+  };
+
+  if (currentUser) {
+    payload.user_id = currentUser.id;
+  }
+
+  const { error } = await db.from('sessions').insert(payload);
 
   if (error) {
     const policyBlocked = error.code === '42501' || /row-level security/i.test(error.message || '');
     const msg = policyBlocked
-      ? 'Save status: blocked by Supabase RLS policy for anon inserts'
+      ? 'Save status: blocked by Supabase RLS policy'
       : `Save status: ${error.message}`;
     console.error('Supabase error:', error);
     setSaveStatus(msg, 'error');
@@ -1504,7 +1979,13 @@ async function saveSessionToSupabase() {
   }
 
   console.log('Session saved successfully');
-  setSaveStatus('Save status: session saved to Supabase', 'ok');
+  if (currentUser) {
+    await loadUserSessions();
+    updateAuthUI();
+    setSaveStatus('Save status: session saved to your account archive', 'ok');
+  } else {
+    setSaveStatus('Save status: guest session saved. Sign in to keep a personal archive.', 'ok');
+  }
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1579,6 +2060,8 @@ function buildCompass() {
     document.getElementById('user-cluster-badge').style.color = uc.color;
   }
 
+  updateAuthUI();
+  renderHistoryPanel();
   setSaveStatus(lastSaveStatus.text, lastSaveStatus.state);
 
   // Matches
@@ -1815,6 +2298,8 @@ function drawCanvas() {
   };
   canvas.onmouseleave = () => document.getElementById('tooltip').classList.remove('show');
 }
+
+void initAuth();
 
 // ══════════════════════════════════════════════════════
 //  KEYBOARD
