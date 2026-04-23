@@ -1631,6 +1631,7 @@ let currentUser = null;
 let userSessions = [];
 let userSessionCount = 0;
 let authMode = 'register';
+let localSessions = [];
 let viewZoom = 1;
 let viewPanX = 0, viewPanY = 0;
 let _dragState = null;
@@ -1722,6 +1723,34 @@ function formatSessionDate(value) {
   });
 }
 
+const LOCAL_KEY = 'psycho-compass-sessions';
+
+function saveSessionToLocal() {
+  if (!userNode) return;
+  const entry = {
+    created_at: new Date().toISOString(),
+    archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
+    cluster_idx: userNode.clusterIdx,
+    player_name: playerName || 'Anonymous',
+    x: userNode.x,
+    y: userNode.y,
+    features: [...userNode.features],
+  };
+  try {
+    const existing = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+    existing.unshift(entry);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(existing.slice(0, 30)));
+  } catch (e) { /* localStorage unavailable */ }
+}
+
+function loadLocalSessions() {
+  try {
+    localSessions = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+  } catch (e) {
+    localSessions = [];
+  }
+}
+
 function renderHistoryPanel() {
   const summary = document.getElementById('history-summary');
   const list = document.getElementById('history-list');
@@ -1730,7 +1759,22 @@ function renderHistoryPanel() {
   list.innerHTML = '';
 
   if (!currentUser) {
-    summary.textContent = 'Sign in to load your previous sessions and keep a persistent archive.';
+    // Show local (device) sessions for guests
+    const prev = localSessions.slice(1); // skip current session (index 0)
+    if (!prev.length) {
+      summary.textContent = 'No previous sessions on this device yet. Sign in to sync across devices.';
+    } else {
+      summary.textContent = `${prev.length} session${prev.length === 1 ? '' : 's'} on this device. Sign in to sync across devices.`;
+      prev.slice(0, 6).forEach((session, index) => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `
+          <div class="history-item-title">Session ${prev.length - index} · ${session.archetype || 'Unclassified'}</div>
+          <div class="history-item-meta">${formatSessionDate(session.created_at)} · ${session.player_name || 'Anonymous'}</div>
+        `;
+        list.appendChild(item);
+      });
+    }
     return;
   }
 
@@ -2198,6 +2242,10 @@ function computeUserPosition() {
 //  COMPASS RENDERING
 // ══════════════════════════════════════════════════════
 function buildCompass() {
+  // Load previous sessions first (before saving current), so ghost trails don't include this run
+  loadLocalSessions();
+  saveSessionToLocal();
+
   // Cluster cards
   const clusterEl = document.getElementById('cluster-cards');
   clusterEl.innerHTML = '';
@@ -2535,6 +2583,29 @@ function drawCanvas() {
   ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 1.5 * lw;
   ctx.stroke();
+
+  // Previous session ghost trails (local history, skip index 0 = current)
+  localSessions.slice(1).forEach((session, i) => {
+    const cp = CLUSTER_PROFILES[session.cluster_idx] || CLUSTER_PROFILES[0];
+    const px = session.x * r, py = session.y * r;
+    const alpha = Math.max(0.12, 0.55 - i * 0.07);
+    const hexA = Math.round(alpha * 255).toString(16).padStart(2, '0');
+    const grd = ctx.createRadialGradient(px, py, 0, px, py, 12);
+    grd.addColorStop(0, cp.color + hexA);
+    grd.addColorStop(1, 'transparent');
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, Math.PI * 2);
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = cp.color + hexA; ctx.fill();
+    ctx.beginPath(); ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.strokeStyle = cp.color + Math.round(alpha * 0.5 * 255).toString(16).padStart(2, '0');
+    ctx.lineWidth = lw; ctx.stroke();
+    // Label
+    ctx.font = `${fs(8)} "Space Mono"`;
+    ctx.fillStyle = cp.color + hexA;
+    ctx.textAlign = 'center';
+    ctx.fillText(`S${localSessions.length - 1 - i}`, px, py - 12 / viewZoom);
+  });
 
   // Bot dots
   bots.forEach(node => {
