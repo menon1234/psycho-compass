@@ -1841,6 +1841,7 @@ function skipToCompass() {
 
 function buildDayChips() {
   const el = document.getElementById('day-chips');
+  if (!el) return;
   el.innerHTML = '';
   for (let d = 1; d <= 20; d++) {
     const chip = document.createElement('div');
@@ -1862,8 +1863,8 @@ function renderQuestion() {
   const pct = (currentQIndex / QUESTIONS_PER_SESSION) * 100;
 
   document.getElementById('q-progress-bar').style.width = pct + '%';
-  document.getElementById('q-counter').textContent =
-    String(currentQIndex + 1).padStart(2, '0') + ' / ' + QUESTIONS_PER_SESSION;
+  const qCounter = document.getElementById('q-counter');
+  if (qCounter) qCounter.textContent = String(currentQIndex + 1).padStart(2, '0') + ' / ' + QUESTIONS_PER_SESSION;
   document.getElementById('q-category').textContent = q.category;
   document.getElementById('q-text').textContent = q.text;
 
