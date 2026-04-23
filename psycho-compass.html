@@ -411,6 +411,7 @@
     background: var(--acid);
     color: var(--black);
   }
+  .auth-form .auth-input { grid-column: 1 / -1; }
   .auth-input {
     width: 100%;
     padding: 14px 16px;
@@ -1054,8 +1055,35 @@
       we cluster your responses and map you to others who share your frequency.
     </p>
     <div class="intro-actions">
-      <button class="btn-primary" onclick="openNameDialog()">PLAY ANONYMOUS</button>
-      <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
+      <div class="intro-buttons">
+        <button class="btn-primary" onclick="openNameDialog()">PLAY ANONYMOUS</button>
+        <button class="btn-secondary" id="btn-logged-out" onclick="toggleAuthPanel()">SIGN IN / REGISTER</button>
+        <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
+      </div>
+      <div id="btn-logged-in" hidden class="auth-user-row">
+        <span class="auth-user-badge" id="auth-user-email"></span>
+        <button class="auth-link" onclick="signOutUser()">SIGN OUT</button>
+      </div>
+      <div class="auth-panel" id="auth-panel" style="display:none">
+        <div id="auth-signed-out">
+          <div class="auth-kicker">◈ ACCOUNT</div>
+          <p class="auth-copy" id="auth-copy" style="margin-bottom:16px">Create an account so every session is tied to you — log back in anytime to see your full history.</p>
+          <form class="auth-form" id="auth-form">
+            <input class="auth-input" id="auth-name" placeholder="Your name" autocomplete="name">
+            <input class="auth-input" id="auth-email" type="email" placeholder="Email address" autocomplete="email" required>
+            <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="current-password" required minlength="6">
+            <button class="auth-submit" id="auth-submit" type="submit">Register Account</button>
+          </form>
+          <div class="auth-feedback" id="auth-feedback" style="margin-top:10px"></div>
+          <div class="auth-toggle-row" style="margin-top:12px">
+            <span id="auth-mode-copy" style="font-size:11px;color:#888;letter-spacing:1px">New here? Create an account to keep your session history.</span>
+            <button class="auth-link" id="auth-mode-toggle" onclick="toggleAuthMode()">Already have an account?</button>
+          </div>
+        </div>
+        <div id="auth-signed-in" hidden>
+          <p class="auth-copy" id="auth-account-summary">Signed in. Your sessions will sync automatically.</p>
+        </div>
+      </div>
     </div>
     <div class="stats-row">
       <div class="stat">
@@ -1565,6 +1593,12 @@ function toggleAuthMode(forceMode) {
   updateAuthUI();
 }
 
+function toggleAuthPanel() {
+  const panel = document.getElementById('auth-panel');
+  if (!panel) return;
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
 function updateAuthUI() {
   const signedOut = document.getElementById('auth-signed-out');
   const signedIn = document.getElementById('auth-signed-in');
@@ -1596,7 +1630,7 @@ function updateAuthUI() {
   if (btnIn) btnIn.hidden = true;
   if (btnOut) btnOut.hidden = false;
   const nameField = document.getElementById('auth-name');
-  if (nameField) nameField.closest('input') && (nameField.style.display = authMode === 'register' ? '' : 'none');
+  if (nameField) nameField.style.display = authMode === 'register' ? '' : 'none';
   submit.textContent = authMode === 'register' ? 'Register Account' : 'Sign In';
   modeCopy.textContent = authMode === 'register'
     ? 'New here? Create an account to keep your session history.'
