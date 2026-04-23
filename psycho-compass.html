@@ -1632,11 +1632,13 @@ let currentUser = null;
 let userSessions = [];
 let userSessionCount = 0;
 let authMode = 'register';
+
 let localSessions = [];
 let viewZoom = 1;
 let viewPanX = 0, viewPanY = 0;
 let _dragState = null;
 let selectedNode = null;
+let compositeNode = null;
 let historyLoadError = '';
 const QUESTIONS_PER_SESSION = 20;
 const SESSION_TIME = 20;
@@ -1750,6 +1752,127 @@ function loadLocalSessions() {
   } catch (e) {
     localSessions = [];
   }
+}
+
+// ── K-means++ in JS ──────────────────────────────────────────────────────────
+
+function kmeansJS(points, k, nRuns) {
+  nRuns = nRuns || 8;
+  const dist = (a, b) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
+
+  function initPlusPlus(pts) {
+    const centers = [pts[Math.floor(Math.random() * pts.length)]];
+    while (centers.length < k) {
+      const d2 = pts.map(p => Math.min(...centers.map(c => dist(p, c) ** 2)));
+      const sum = d2.reduce((s, v) => s + v, 0);
+      let r = Math.random() * sum;
+      for (let i = 0; i < pts.length; i++) {
+        r -= d2[i];
+        if (r <= 0) { centers.push(pts[i]); break; }
+      }
+      if (centers.length < k) centers.push(pts[pts.length - 1]);
+    }
+    return centers.map(c => [...c]);
+  }
+
+  function runOnce(pts) {
+    let centers = initPlusPlus(pts);
+    let labels  = new Array(pts.length).fill(0);
+    for (let iter = 0; iter < 200; iter++) {
+      const next = pts.map(p => {
+        let best = 0, bestD = Infinity;
+        centers.forEach((c, j) => { const d = dist(p, c); if (d < bestD) { bestD = d; best = j; } });
+        return best;
+      });
+      if (!next.some((l, i) => l !== labels[i])) break;
+      labels = next;
+      centers = Array.from({ length: k }, (_, j) => {
+        const mem = pts.filter((_, i) => labels[i] === j);
+        if (!mem.length) return centers[j];
+        return pts[0].map((_, d) => mem.reduce((s, p) => s + p[d], 0) / mem.length);
+      });
+    }
+    const inertia = pts.reduce((s, p, i) => s + dist(p, centers[labels[i]]) ** 2, 0);
+    return { labels, centers, inertia };
+  }
+
+  let best = null;
+  for (let r = 0; r < nRuns; r++) {
+    const res = runOnce(points);
+    if (!best || res.inertia < best.inertia) best = res;
+  }
+  return best;
+}
+
+function reClusterNodes() {
+  if (!bots.length) return;
+
+  // All nodes to cluster: bots + user sessions (local + Supabase)
+  const allNodes = [...bots];
+  if (userNode) allNodes.push(userNode);
+  [...localSessions, ...userSessions]
+    .filter(s => s.features && s.features.length === 4)
+    .forEach((s, i) => allNodes.push({
+      id: 500 + i, name: s.player_name || `S${i + 1}`,
+      isSession: true, features: s.features,
+      x: s.x || 0, y: s.y || 0, clusterIdx: s.cluster_idx || 0,
+    }));
+
+  const k      = CLUSTER_PROFILES.length;
+  const points = allNodes.map(n => n.features);
+  const { labels, centers } = kmeansJS(points, k);
+
+  // Map each new centroid to the nearest original cluster profile (preserves names/colours)
+  const clusterMap = centers.map(center => {
+    let best = 0, bestD = Infinity;
+    CLUSTER_PROFILES.forEach((cp, j) => {
+      const d = cp.bias.reduce((s, b, d) => s + (center[d] - b) ** 2, 0);
+      if (d < bestD) { bestD = d; best = j; }
+    });
+    return best;
+  });
+
+  allNodes.forEach((node, i) => { node.clusterIdx = clusterMap[labels[i]]; });
+}
+
+function computeCompositeNode() {
+  // Gather all sessions: local history + Supabase archive
+  const allSessions = [
+    ...localSessions,
+    ...userSessions.filter(s => s.features && s.features.length === 4),
+  ];
+
+  // Need at least 2 past sessions to make a composite meaningful
+  if (allSessions.length < 2) { compositeNode = null; return; }
+
+  // Weighted mean — most recent session counts most (decay 0.80 per step back)
+  const decay   = 0.80;
+  const n       = allSessions.length;
+  const weights = allSessions.map((_, i) => Math.pow(decay, n - 1 - i));
+  const totalW  = weights.reduce((s, w) => s + w, 0);
+
+  const avgFeatures = [0, 0, 0, 0];
+  allSessions.forEach((s, i) => {
+    const fv = s.features;
+    if (!fv || fv.length !== 4) return;
+    for (let d = 0; d < 4; d++) avgFeatures[d] += fv[d] * weights[i];
+  });
+  for (let d = 0; d < 4; d++) avgFeatures[d] /= totalW;
+
+  const x = Math.max(-0.9, Math.min(0.9, avgFeatures[2] - avgFeatures[0]));
+  const y = Math.max(-0.9, Math.min(0.9, avgFeatures[1] - avgFeatures[3]));
+
+  let bestCluster = 0, bestDist = Infinity;
+  CLUSTER_PROFILES.forEach((cp, idx) => {
+    const dist = cp.bias.reduce((s, b, d) => s + (avgFeatures[d] - b) ** 2, 0);
+    if (dist < bestDist) { bestDist = dist; bestCluster = idx; }
+  });
+
+  compositeNode = {
+    id: 999, name: 'YOU (avg)', isComposite: true,
+    clusterIdx: bestCluster, x, y, features: avgFeatures,
+    sessionCount: n,
+  };
 }
 
 function exportLocalSessions() {
@@ -2261,6 +2384,7 @@ function buildCompass() {
   // Load previous sessions first (before saving current), so ghost trails don't include this run
   loadLocalSessions();
   saveSessionToLocal();
+  computeCompositeNode();
 
   // Cluster cards
   const clusterEl = document.getElementById('cluster-cards');
@@ -2432,7 +2556,11 @@ function setupCanvasInteraction() {
     const wx = (mx - cx - viewPanX) / viewZoom;
     const wy = (my - cy - viewPanY) / viewZoom;
     const hitR = Math.max(8 / viewZoom, 5);
-    const allN = userNode ? [...bots, userNode] : bots;
+    const allN = [
+      ...bots,
+      ...(userNode ? [userNode] : []),
+      ...(compositeNode ? [compositeNode] : []),
+    ];
     let found = null;
     allN.forEach(node => {
       if (Math.hypot(wx - node.x * r, wy - node.y * r) < hitR) found = node;
@@ -2689,6 +2817,43 @@ function drawCanvas() {
       ctx.strokeStyle = cp.color;
       ctx.lineWidth = 1.5 * lw;
       ctx.stroke();
+    }
+  }
+
+  // Composite node (mean of all sessions)
+  if (compositeNode) {
+    const px = compositeNode.x * r, py = compositeNode.y * r;
+    const cp = CLUSTER_PROFILES[compositeNode.clusterIdx];
+
+    // Dashed ring to distinguish from current session
+    ctx.save();
+    ctx.setLineDash([4 / viewZoom, 3 / viewZoom]);
+    ctx.beginPath(); ctx.arc(px, py, 13, 0, Math.PI * 2);
+    ctx.strokeStyle = cp.color + 'cc'; ctx.lineWidth = 1.5 * lw; ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, py, 17, 0, Math.PI * 2);
+    ctx.strokeStyle = cp.color + '44'; ctx.lineWidth = lw; ctx.stroke();
+    ctx.restore();
+
+    // Inner dot — diamond shape to visually differ from YOU circle
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(Math.PI / 4);
+    ctx.beginPath();
+    ctx.rect(-5, -5, 10, 10);
+    ctx.fillStyle = cp.color;
+    ctx.fill();
+    ctx.restore();
+
+    // Label
+    ctx.font = `600 ${fs(9)} "Space Mono"`;
+    ctx.fillStyle = cp.color;
+    ctx.textAlign = 'center';
+    ctx.fillText(`AVG ×${compositeNode.sessionCount}`, px, py - 21 / viewZoom);
+
+    // Selection ring
+    if (selectedNode && selectedNode.isComposite) {
+      ctx.beginPath(); ctx.arc(px, py, 20, 0, Math.PI * 2);
+      ctx.strokeStyle = cp.color; ctx.lineWidth = 1.5 * lw; ctx.stroke();
     }
   }
 
