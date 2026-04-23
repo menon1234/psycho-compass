@@ -116,6 +116,30 @@
     vertical-align: top;
     flex-shrink: 0;
   }
+  .ring-outer {
+    transform-origin: 22px 22px;
+    animation: spinCW 10s linear infinite;
+  }
+  .ring-inner {
+    transform-origin: 22px 22px;
+    animation: spinCCW 6s linear infinite;
+  }
+  @keyframes spinCW  { to { transform: rotate(360deg);  } }
+  @keyframes spinCCW { to { transform: rotate(-360deg); } }
+
+  .btn-anon {
+    background: transparent;
+    color: var(--white);
+    border: 1px solid var(--white);
+  }
+  .btn-anon:hover { background: rgba(255,255,255,0.08); transform: translate(-2px,-2px); }
+  .anon-hint {
+    font-size: 10px;
+    color: #444;
+    letter-spacing: 1px;
+    text-align: center;
+    margin-top: 8px;
+  }
   .eye-sub {
     position: absolute;
     top: calc(100% + 0.02em);
@@ -971,9 +995,11 @@
         <span>Comp</span>
         <span class="o-wrapper">
           <svg class="eye-svg" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="2"/>
-            <circle cx="22" cy="22" r="13" stroke="currentColor" stroke-width="2"/>
-            <circle cx="22" cy="22" r="6" fill="currentColor"/>
+            <line x1="22" y1="2" x2="22" y2="42" stroke="currentColor" stroke-width="0.8" opacity="0.35"/>
+            <line x1="2" y1="22" x2="42" y2="22" stroke="currentColor" stroke-width="0.8" opacity="0.35"/>
+            <circle class="ring-outer" cx="22" cy="22" r="20" stroke="currentColor" stroke-width="2" stroke-dasharray="7 3"/>
+            <circle class="ring-inner" cx="22" cy="22" r="13" stroke="currentColor" stroke-width="2" stroke-dasharray="5 2"/>
+            <circle cx="22" cy="22" r="4" fill="currentColor"/>
           </svg>
           <span class="eye-sub">
             <span class="bolt bolt-left" aria-hidden="true"></span>
@@ -993,7 +1019,13 @@
     </p>
     <div class="intro-actions">
       <div class="intro-buttons">
-        <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
+        <div id="btn-logged-in" hidden>
+          <button class="btn-primary" onclick="startQuiz()">BEGIN SESSION</button>
+        </div>
+        <div id="btn-logged-out">
+          <button class="btn-primary btn-anon" onclick="startQuiz()">START ANONYMOUS</button>
+          <div class="anon-hint">Register below to save your history</div>
+        </div>
         <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
       </div>
       <div class="auth-panel">
@@ -1529,9 +1561,14 @@ function updateAuthUI() {
   const accountSummary = document.getElementById('auth-account-summary');
   const accountPanel = document.getElementById('account-summary');
 
+  const btnIn = document.getElementById('btn-logged-in');
+  const btnOut = document.getElementById('btn-logged-out');
+
   if (currentUser) {
     signedOut.hidden = true;
     signedIn.hidden = false;
+    if (btnIn) btnIn.hidden = false;
+    if (btnOut) btnOut.hidden = true;
     authCopy.textContent = 'Signed in accounts sync sessions to Supabase so people can return to their map later.';
     userEmail.textContent = currentUser.email || 'Signed in';
     accountSummary.textContent = `Signed in as ${currentUser.email || 'your account'}. New sessions will attach to your archive automatically.`;
@@ -1541,6 +1578,8 @@ function updateAuthUI() {
 
   signedOut.hidden = false;
   signedIn.hidden = true;
+  if (btnIn) btnIn.hidden = true;
+  if (btnOut) btnOut.hidden = false;
   const nameField = document.getElementById('auth-name');
   if (nameField) nameField.closest('input') && (nameField.style.display = authMode === 'register' ? '' : 'none');
   submit.textContent = authMode === 'register' ? 'Register Account' : 'Sign In';
