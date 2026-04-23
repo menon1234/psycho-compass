@@ -1102,8 +1102,9 @@
     </p>
     <div class="intro-actions">
       <div class="intro-buttons">
-        <button class="btn-primary" onclick="openNameDialog()">PLAY ANONYMOUS</button>
-        <button class="btn-secondary" id="btn-logged-out" onclick="toggleAuthPanel()">SIGN IN / REGISTER</button>
+        <button class="btn-primary"   id="btn-play-user"   hidden onclick="playAsUser()">PLAY</button>
+        <button class="btn-secondary" id="btn-play-anon"          onclick="playAnonymous()">PLAY ANONYMOUS</button>
+        <button class="btn-secondary" id="btn-logged-out"         onclick="toggleAuthPanel()">SIGN IN / REGISTER</button>
         <button class="btn-secondary" onclick="skipToCompass()">VIEW CompoundEYE →</button>
       </div>
       <div id="btn-logged-in" hidden class="auth-user-row">
@@ -1632,6 +1633,7 @@ let currentUser = null;
 let userSessions = [];
 let userSessionCount = 0;
 let authMode = 'register';
+let playingAnonymously = false;
 
 let localSessions = [];
 let viewZoom = 1;
@@ -1692,6 +1694,8 @@ function updateAuthUI() {
     signedIn.hidden = false;
     if (btnIn) btnIn.hidden = false;
     if (btnOut) btnOut.hidden = true;
+    const btnPlay = document.getElementById('btn-play-user');
+    if (btnPlay) btnPlay.hidden = false;
     authCopy.textContent = 'Signed in accounts sync sessions to Supabase so people can return to their map later.';
     userEmail.textContent = currentUser.email || 'Signed in';
     accountSummary.textContent = `Signed in as ${currentUser.email || 'your account'}. New sessions will attach to your archive automatically.`;
@@ -1703,6 +1707,8 @@ function updateAuthUI() {
   signedIn.hidden = true;
   if (btnIn) btnIn.hidden = true;
   if (btnOut) btnOut.hidden = false;
+  const btnPlay = document.getElementById('btn-play-user');
+  if (btnPlay) btnPlay.hidden = true;
   const nameField = document.getElementById('auth-name');
   if (nameField) nameField.style.display = authMode === 'register' ? '' : 'none';
   submit.textContent = authMode === 'register' ? 'Register Account' : 'Sign In';
@@ -2085,6 +2091,21 @@ function showScreen(id) {
 
 let playerName = '';
 
+function playAsUser() {
+  // Signed-in play — session linked to account, no name dialog needed
+  playingAnonymously = false;
+  playerName = currentUser?.user_metadata?.full_name
+    || currentUser?.email?.split('@')[0]
+    || 'Player';
+  startQuiz();
+}
+
+function playAnonymous() {
+  // Always anonymous — session never linked to account even if signed in
+  playingAnonymously = true;
+  openNameDialog();
+}
+
 function openNameDialog() {
   document.getElementById('name-dialog-overlay').classList.add('open');
   setTimeout(() => document.getElementById('player-name-input').focus(), 50);
@@ -2309,7 +2330,7 @@ async function saveSessionToSupabase() {
     player_name: playerName || 'Anonymous'
   };
 
-  if (currentUser) {
+  if (currentUser && !playingAnonymously) {
     payload.user_id = currentUser.id;
   }
 
@@ -2325,13 +2346,12 @@ async function saveSessionToSupabase() {
     return;
   }
 
-  console.log('Session saved successfully');
-  if (currentUser) {
+  if (currentUser && !playingAnonymously) {
     await loadUserSessions();
     updateAuthUI();
     setSaveStatus('Save status: session saved to your account archive', 'ok');
   } else {
-    setSaveStatus('Save status: guest session saved. Sign in to keep a personal archive.', 'ok');
+    setSaveStatus('Save status: anonymous session saved.', 'ok');
   }
 }
 
