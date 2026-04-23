@@ -639,6 +639,14 @@
     text-transform: uppercase;
     margin-bottom: 16px;
   }
+  .save-status {
+    margin-top: 14px;
+    font-size: 10px;
+    line-height: 1.5;
+    color: #777;
+  }
+  .save-status.ok { color: var(--acid); }
+  .save-status.error { color: var(--pink); }
 
   .match-card {
     padding: 14px;
@@ -920,6 +928,7 @@
         <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:9px;color:#444;">
           <span>D1</span><span>D5</span><span>D10</span><span>D15</span><span>D20</span>
         </div>
+        <div id="save-status" class="save-status">Save status: waiting for a completed session</div>
       </div>
 
     </div>
@@ -1259,8 +1268,17 @@ let timerInterval = null;
 let timerValue = 10;
 let bots = [];
 let userNode = null;
+let lastSaveStatus = { text: 'Save status: waiting for a completed session', state: '' };
 const QUESTIONS_PER_SESSION = 20;
 const SESSION_TIME = 20;
+
+function setSaveStatus(text, state = '') {
+  lastSaveStatus = { text, state };
+  const el = document.getElementById('save-status');
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'save-status' + (state ? ` ${state}` : '');
+}
 
 // ══════════════════════════════════════════════════════
 //  NAVIGATION
@@ -1274,6 +1292,7 @@ function startQuiz() {
   questionPool = buildQuestionPool();
   currentQIndex = 0;
   sessionAnswers = [];
+  setSaveStatus('Save status: in progress...', '');
   buildDayChips();
   showScreen('screen-question');
   renderQuestion();
@@ -1448,25 +1467,44 @@ async function runProcessing() {
   // Generate bots + place user
   bots = generateBots();
   computeUserPosition();
-
-  console.log('Saving session...', userNode);
-  if (db) {
-    db.from('sessions').insert({
-      answers: sessionAnswers,
-      cluster_idx: userNode.clusterIdx,
-      archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
-      x: userNode.x,
-      y: userNode.y
-    }).then(({ error }) => {
-      if (error) console.error('Supabase error:', error);
-      else console.log('Session saved successfully');
-    });
-  } else {
-    console.error('db not initialised');
-  }
+  await saveSessionToSupabase();
 
   showScreen('screen-compass');
   buildCompass();
+}
+
+async function saveSessionToSupabase() {
+  console.log('Saving session...', userNode);
+
+  if (!db) {
+    const msg = 'Save status: Supabase client not initialized';
+    console.error(msg);
+    setSaveStatus(msg, 'error');
+    return;
+  }
+
+  setSaveStatus('Save status: saving session...', '');
+
+  const { error } = await db.from('sessions').insert({
+    answers: sessionAnswers,
+    cluster_idx: userNode.clusterIdx,
+    archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
+    x: userNode.x,
+    y: userNode.y
+  });
+
+  if (error) {
+    const policyBlocked = error.code === '42501' || /row-level security/i.test(error.message || '');
+    const msg = policyBlocked
+      ? 'Save status: blocked by Supabase RLS policy for anon inserts'
+      : `Save status: ${error.message}`;
+    console.error('Supabase error:', error);
+    setSaveStatus(msg, 'error');
+    return;
+  }
+
+  console.log('Session saved successfully');
+  setSaveStatus('Save status: session saved to Supabase', 'ok');
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -1540,6 +1578,8 @@ function buildCompass() {
     document.getElementById('user-cluster-badge').style.borderColor = uc.color;
     document.getElementById('user-cluster-badge').style.color = uc.color;
   }
+
+  setSaveStatus(lastSaveStatus.text, lastSaveStatus.state);
 
   // Matches
   buildMatchList();

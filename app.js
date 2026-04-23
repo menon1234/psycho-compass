@@ -194,8 +194,14 @@ async function runProcessing() {
 
   bots = generateBots();
   userNode = computeUserPosition(sessionAnswers);
+  await saveSessionToSupabase();
 
-  db.from('sessions').insert({
+  showScreen('screen-compass');
+  buildCompass();
+}
+
+async function saveSessionToSupabase() {
+  const { error } = await db.from('sessions').insert({
     answers: sessionAnswers,
     cluster_idx: userNode.clusterIdx,
     archetype: CLUSTER_PROFILES[userNode.clusterIdx].name,
@@ -203,8 +209,12 @@ async function runProcessing() {
     y: userNode.y
   });
 
-  showScreen('screen-compass');
-  buildCompass();
+  if (error) {
+    console.error('Supabase error:', error);
+    return;
+  }
+
+  console.log('Session saved successfully');
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
