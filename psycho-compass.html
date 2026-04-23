@@ -999,11 +999,10 @@
       <div class="auth-panel">
         <div class="auth-kicker">Account Sync</div>
         <div class="auth-title">Save Your Pattern</div>
-        <div class="auth-copy" id="auth-copy">Sign in with Google or create an account so every session is tied to you, not just the browser.</div>
+        <div class="auth-copy" id="auth-copy">Create an account so every session is tied to you — log back in anytime to see your full history.</div>
         <div class="auth-stack" id="auth-signed-out">
-          <button class="btn-google" type="button" onclick="signInWithGoogle()">Continue with Google</button>
-          <div class="auth-divider"><span>or use email</span></div>
           <form id="auth-form" class="auth-form">
+            <input class="auth-input" id="auth-name" type="text" placeholder="Name" autocomplete="name">
             <input class="auth-input" id="auth-email" type="email" placeholder="Email" autocomplete="email" required>
             <input class="auth-input" id="auth-password" type="password" placeholder="Password" autocomplete="current-password" minlength="6" required>
             <button class="auth-submit" id="auth-submit" type="submit">Register Account</button>
@@ -1052,7 +1051,6 @@
       <div class="q-progress-wrap">
         <div class="q-progress-bar" id="q-progress-bar"></div>
       </div>
-      <div class="q-counter" id="q-counter">01 / 20</div>
       <div class="q-timer-ring" id="timer-ring">
         <svg viewBox="0 0 48 48" width="56" height="56">
           <circle class="ring-bg" cx="24" cy="24" r="22"/>
@@ -1068,10 +1066,6 @@
       <div class="q-options" id="q-options"></div>
     </div>
 
-    <div style="margin-top: 32px; display: flex; justify-content: space-between; align-items: center;">
-      <div class="day-chips" id="day-chips"></div>
-      <div style="font-size: 10px; color: #333; letter-spacing: 2px;">SKIP WITH ↵</div>
-    </div>
   </div>
 </div>
 
@@ -1547,6 +1541,8 @@ function updateAuthUI() {
 
   signedOut.hidden = false;
   signedIn.hidden = true;
+  const nameField = document.getElementById('auth-name');
+  if (nameField) nameField.closest('input') && (nameField.style.display = authMode === 'register' ? '' : 'none');
   submit.textContent = authMode === 'register' ? 'Register Account' : 'Sign In';
   modeCopy.textContent = authMode === 'register'
     ? 'New here? Create an account to keep your session history.'
@@ -1554,7 +1550,7 @@ function updateAuthUI() {
   modeToggle.textContent = authMode === 'register'
     ? 'Already have an account?'
     : 'Need an account instead?';
-  authCopy.textContent = 'Sign in with Google or create an account so every session is tied to you, not just the browser.';
+  authCopy.textContent = 'Create an account so every session is tied to you — log back in anytime to see your full history.';
   accountPanel.textContent = 'Guest mode. Sign in on the intro screen to sync sessions across visits.';
 }
 
@@ -1665,24 +1661,6 @@ async function initAuth() {
   });
 }
 
-async function signInWithGoogle() {
-  if (!db) {
-    setAuthFeedback('Supabase client is unavailable right now.', 'error');
-    return;
-  }
-
-  setAuthFeedback('Redirecting to Google...', '');
-  const { error } = await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: getAuthRedirectUrl(),
-    },
-  });
-
-  if (error) {
-    setAuthFeedback(error.message, 'error');
-  }
-}
 
 async function handleAuthFormSubmit(event) {
   event.preventDefault();
@@ -1692,11 +1670,17 @@ async function handleAuthFormSubmit(event) {
     return;
   }
 
+  const name = document.getElementById('auth-name')?.value.trim();
   const email = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value;
 
   if (!email || !password) {
     setAuthFeedback('Email and password are both required.', 'error');
+    return;
+  }
+
+  if (authMode === 'register' && !name) {
+    setAuthFeedback('Please enter your name.', 'error');
     return;
   }
 
@@ -1708,6 +1692,7 @@ async function handleAuthFormSubmit(event) {
       password,
       options: {
         emailRedirectTo: getAuthRedirectUrl(),
+        data: { full_name: name },
       },
     });
 
