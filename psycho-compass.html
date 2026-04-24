@@ -1641,6 +1641,7 @@ let viewPanX = 0, viewPanY = 0;
 let _dragState = null;
 let selectedNode = null;
 let compositeNode = null;
+let hoveredNode = null;
 let historyLoadError = '';
 const QUESTIONS_PER_SESSION = 20;
 const SESSION_TIME = 20;
@@ -2125,8 +2126,22 @@ function confirmNameAndStart(e) {
   startQuiz();
 }
 
+const DECK_KEY = 'psycho-compass-deck';
+
+function drawSessionQuestions() {
+  let deck = [];
+  try { deck = JSON.parse(localStorage.getItem(DECK_KEY) || '[]'); } catch (e) {}
+  // Rebuild deck when fewer than one session's worth remain
+  if (deck.length < QUESTIONS_PER_SESSION) {
+    deck = buildQuestionPool(); // fresh 500-question shuffled pool
+  }
+  const questions = deck.splice(0, QUESTIONS_PER_SESSION);
+  try { localStorage.setItem(DECK_KEY, JSON.stringify(deck)); } catch (e) {}
+  return questions;
+}
+
 function startQuiz() {
-  questionPool = buildQuestionPool();
+  questionPool = drawSessionQuestions();
   currentQIndex = 0;
   sessionAnswers = [];
   showScreen('screen-question');
@@ -2591,7 +2606,7 @@ function setupCanvasInteraction() {
     const my = (e.clientY - rect.top) * (canvas.height / rect.height);
     const wx = (mx - cx - viewPanX) / viewZoom;
     const wy = (my - cy - viewPanY) / viewZoom;
-    const hitR = Math.max(8 / viewZoom, 5);
+    const hitR = Math.max(14 / viewZoom, 6);
     const allN = [
       ...bots,
       ...(userNode ? [userNode] : []),
@@ -2601,22 +2616,30 @@ function setupCanvasInteraction() {
     allN.forEach(node => {
       if (Math.hypot(wx - node.x * r, wy - node.y * r) < hitR) found = node;
     });
+
+    // Redraw canvas when hover changes (to show/hide inline name label)
+    if (found !== hoveredNode) {
+      hoveredNode = found;
+      drawCanvas();
+    }
+
     const tooltip = document.getElementById('tooltip');
     if (found) {
       const cp = CLUSTER_PROFILES[found.clusterIdx];
-      document.getElementById('tt-name').textContent = found.name + (found.isUser ? ' ★' : '');
+      document.getElementById('tt-name').textContent = found.name + (found.isUser ? ' ★' : found.isComposite ? ' ◈' : '');
       document.getElementById('tt-name').style.color = cp.color;
       document.getElementById('tt-cluster').textContent = cp.name;
-      if (!found.isUser && userNode) {
+      if (!found.isUser && !found.isComposite && userNode) {
         const dot = found.features.reduce((s, f, i) => s + f * userNode.features[i], 0);
-        const n1 = Math.sqrt(found.features.reduce((s, f) => s + f * f, 0));
-        const n2 = Math.sqrt(userNode.features.reduce((s, f) => s + f * f, 0));
-        document.getElementById('tt-sim').textContent = `Similarity: ${Math.round(dot / (n1 * n2) * 100)}%`;
+        const n1  = Math.sqrt(found.features.reduce((s, f) => s + f * f, 0));
+        const n2  = Math.sqrt(userNode.features.reduce((s, f) => s + f * f, 0));
+        const sim = (n1 && n2) ? Math.round(dot / (n1 * n2) * 100) : 0;
+        document.getElementById('tt-sim').textContent = `Similarity: ${sim}%`;
       } else {
-        document.getElementById('tt-sim').textContent = '';
+        document.getElementById('tt-sim').textContent = found.isComposite ? `Mean of ${found.sessionCount} sessions` : '';
       }
       tooltip.style.left = (e.clientX + 14) + 'px';
-      tooltip.style.top = (e.clientY - 10) + 'px';
+      tooltip.style.top  = (e.clientY - 10) + 'px';
       tooltip.classList.add('show');
       canvas.style.cursor = 'pointer';
     } else {
@@ -2652,7 +2675,9 @@ function setupCanvasInteraction() {
 
   canvas.addEventListener('mouseleave', () => {
     _dragState = null;
+    hoveredNode = null;
     document.getElementById('tooltip').classList.remove('show');
+    drawCanvas();
   });
 
   // Touch: pinch-to-zoom + drag
@@ -2904,6 +2929,26 @@ function drawCanvas() {
     ctx.strokeStyle = isMain ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.1)';
     ctx.lineWidth = (isMain ? 1.5 : 0.5) * lw;
     ctx.stroke();
+  }
+
+  // Hover name label — drawn on canvas near the node
+  if (hoveredNode && !hoveredNode.isUser && !hoveredNode.isComposite) {
+    const px    = hoveredNode.x * r, py = hoveredNode.y * r;
+    const cp    = CLUSTER_PROFILES[hoveredNode.clusterIdx];
+    const label = hoveredNode.name;
+    const fsz   = 10 / viewZoom;
+    const pad   = 5 / viewZoom;
+    ctx.font    = `700 ${fsz}px "Syne"`;
+    const tw    = ctx.measureText(label).width;
+    const bx    = px - tw / 2 - pad;
+    const by    = py - fsz - pad * 2 - 8 / viewZoom;
+    ctx.fillStyle = 'rgba(6,6,8,0.88)';
+    ctx.fillRect(bx, by, tw + pad * 2, fsz + pad * 2);
+    ctx.fillStyle   = cp.color;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(label, px, by + pad);
+    ctx.textBaseline = 'alphabetic';
   }
 
   ctx.restore();
