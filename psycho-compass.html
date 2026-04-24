@@ -2289,7 +2289,7 @@ function finishSession() {
 }
 
 async function fetchPublicSessions() {
-  if (!db) return [];
+  if (!db) { console.warn('fetchPublicSessions: db not ready'); return []; }
   try {
     const { data, error } = await db
       .from('sessions')
@@ -2297,16 +2297,23 @@ async function fetchPublicSessions() {
       .not('x', 'is', null)
       .order('created_at', { ascending: false })
       .limit(500);
-    if (error) { console.warn('fetchPublicSessions:', error.message); return []; }
-    return (data || []).map((s, i) => ({
+    if (error) {
+      console.warn('fetchPublicSessions error:', error.message, error.code);
+      return [];
+    }
+    const nodes = (data || []).map((s, i) => ({
       id:         s.id || i,
       name:       s.player_name || 'Anonymous',
-      clusterIdx: s.cluster_idx ?? 0,
+      clusterIdx: typeof s.cluster_idx === 'number' ? s.cluster_idx : 0,
       x:          s.x,
       y:          s.y,
-      features:   s.features || [0.25, 0.25, 0.25, 0.25],
+      features:   Array.isArray(s.features) && s.features.length === 4
+                    ? s.features
+                    : [0.25, 0.25, 0.25, 0.25],
     }));
-  } catch (e) { return []; }
+    console.log(`fetchPublicSessions: loaded ${nodes.length} nodes`, nodes.slice(0,3));
+    return nodes;
+  } catch (e) { console.error('fetchPublicSessions exception:', e); return []; }
 }
 
 async function runProcessing() {
@@ -2437,11 +2444,14 @@ function buildCompass() {
   // Cluster cards
   const clusterEl = document.getElementById('cluster-cards');
   clusterEl.innerHTML = '';
-  // All real nodes: fetched sessions + current user
+  // All nodes visible on canvas
   const allRealNodes = [
     ...bots,
+    ...localSessions.map(s => ({ clusterIdx: s.cluster_idx ?? s.clusterIdx ?? 0 })),
     ...(userNode ? [userNode] : []),
   ];
+
+  console.log('buildCompass nodes:', bots.length, 'bots,', localSessions.length, 'local,', userNode ? 1 : 0, 'user');
 
   CLUSTER_PROFILES.forEach((cp, idx) => {
     const count       = allRealNodes.filter(n => n.clusterIdx === idx).length;
