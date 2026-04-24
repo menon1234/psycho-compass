@@ -2430,7 +2430,6 @@ function computeUserPosition() {
 //  COMPASS RENDERING
 // ══════════════════════════════════════════════════════
 function buildCompass() {
-  // Load previous sessions first (before saving current), so ghost trails don't include this run
   loadLocalSessions();
   saveSessionToLocal();
   computeCompositeNode();
@@ -2438,10 +2437,15 @@ function buildCompass() {
   // Cluster cards
   const clusterEl = document.getElementById('cluster-cards');
   clusterEl.innerHTML = '';
+  // All real nodes: fetched sessions + current user
+  const allRealNodes = [
+    ...bots,
+    ...(userNode ? [userNode] : []),
+  ];
+
   CLUSTER_PROFILES.forEach((cp, idx) => {
-    const nodeCount  = bots.filter(b => b.clusterIdx === idx).length;
+    const count       = allRealNodes.filter(n => n.clusterIdx === idx).length;
     const isMyCluster = userNode && userNode.clusterIdx === idx;
-    const total      = nodeCount + (isMyCluster ? 1 : 0);
     const card = document.createElement('div');
     card.className = 'legend-card' + (isMyCluster ? ' active' : '');
     card.innerHTML = `
@@ -2450,7 +2454,7 @@ function buildCompass() {
         ${cp.name}
       </div>
       <div class="legend-desc">${cp.desc}</div>
-      <div class="legend-count">${total} node${total !== 1 ? 's' : ''}</div>
+      <div class="legend-count">${count} node${count !== 1 ? 's' : ''}</div>
     `;
     clusterEl.appendChild(card);
   });
