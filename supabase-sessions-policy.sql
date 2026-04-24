@@ -10,21 +10,33 @@ drop policy if exists "allow guest inserts into sessions" on public.sessions;
 drop policy if exists "allow anon inserts into sessions" on public.sessions;
 drop policy if exists "allow authenticated inserts into own sessions" on public.sessions;
 drop policy if exists "allow authenticated reads own sessions" on public.sessions;
+drop policy if exists "allow public read compass nodes" on public.sessions;
 
+-- Anyone can insert a guest session (no user_id)
 create policy "allow guest inserts into sessions"
 on public.sessions
 for insert
 to anon
 with check (user_id is null);
 
+-- Signed-in users can insert sessions linked to their account
 create policy "allow authenticated inserts into own sessions"
 on public.sessions
 for insert
 to authenticated
 with check (auth.uid() = user_id);
 
+-- Signed-in users can read their own full sessions (for archive/history)
 create policy "allow authenticated reads own sessions"
 on public.sessions
 for select
 to authenticated
 using (auth.uid() = user_id);
+
+-- Anyone can read the compass-position columns for all sessions
+-- (x, y, cluster_idx, archetype, player_name only — no answers, no user_id)
+create policy "allow public read compass nodes"
+on public.sessions
+for select
+to anon
+using (true);

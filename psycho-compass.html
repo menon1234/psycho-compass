@@ -2133,16 +2133,9 @@ function startQuiz() {
   renderQuestion();
 }
 
-function skipToCompass() {
-  bots = generateBots();
-  // Simulate user in the middle
-  const rng = seededRand(999);
-  userNode = {
-    id: 200, name: 'YOU', clusterIdx: Math.floor(rng()*4),
-    x: (rng()-0.5)*1.4, y: (rng()-0.5)*1.4,
-    features: [0.25,0.25,0.25,0.25],
-    isUser: true
-  };
+async function skipToCompass() {
+  bots = await fetchPublicSessions();
+  userNode = null;
   showScreen('screen-compass');
   buildCompass();
 }
@@ -2280,12 +2273,33 @@ function finishSession() {
   runProcessing();
 }
 
+async function fetchPublicSessions() {
+  if (!db) return [];
+  try {
+    const { data, error } = await db
+      .from('sessions')
+      .select('id, x, y, cluster_idx, archetype, player_name, features')
+      .not('x', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) { console.warn('fetchPublicSessions:', error.message); return []; }
+    return (data || []).map((s, i) => ({
+      id:         s.id || i,
+      name:       s.player_name || 'Anonymous',
+      clusterIdx: s.cluster_idx ?? 0,
+      x:          s.x,
+      y:          s.y,
+      features:   s.features || [0.25, 0.25, 0.25, 0.25],
+    }));
+  } catch (e) { return []; }
+}
+
 async function runProcessing() {
   const steps = [
-    { id: 'proc-log-1', msg: 'Initializing 200 bot profiles...', delay: 400 },
-    { id: 'proc-log-2', msg: 'Generating response vectors (500 dims)...', delay: 700 },
+    { id: 'proc-log-1', msg: 'Fetching session data...', delay: 400 },
+    { id: 'proc-log-2', msg: 'Analysing response vectors...', delay: 700 },
     { id: 'proc-log-3', msg: 'Running K-means clustering (k=4)...', delay: 800 },
-    { id: 'proc-log-4', msg: 'Projecting to 2D manifold (t-SNE simulation)...', delay: 900 },
+    { id: 'proc-log-4', msg: 'Projecting to 2D manifold...', delay: 900 },
     { id: 'proc-log-5', msg: 'Placing nodes on compass...', delay: 600 },
   ];
 
@@ -2300,8 +2314,8 @@ async function runProcessing() {
   }
   await delay(elapsed + 400);
 
-  // Generate bots + place user
-  bots = generateBots();
+  // Fetch real sessions + place user
+  bots = await fetchPublicSessions();
   computeUserPosition();
   await saveSessionToSupabase();
 
@@ -2410,16 +2424,18 @@ function buildCompass() {
   const clusterEl = document.getElementById('cluster-cards');
   clusterEl.innerHTML = '';
   CLUSTER_PROFILES.forEach((cp, idx) => {
-    const count = bots.filter(b => b.clusterIdx === idx).length;
+    const nodeCount  = bots.filter(b => b.clusterIdx === idx).length;
+    const isMyCluster = userNode && userNode.clusterIdx === idx;
+    const total      = nodeCount + (isMyCluster ? 1 : 0);
     const card = document.createElement('div');
-    card.className = 'legend-card' + (userNode && userNode.clusterIdx === idx ? ' active' : '');
+    card.className = 'legend-card' + (isMyCluster ? ' active' : '');
     card.innerHTML = `
       <div class="legend-name">
         <span class="legend-dot" style="background:${cp.color}"></span>
         ${cp.name}
       </div>
       <div class="legend-desc">${cp.desc}</div>
-      <div class="legend-count">${count + (userNode&&userNode.clusterIdx===idx?1:0)} nodes</div>
+      <div class="legend-count">${total} node${total !== 1 ? 's' : ''}</div>
     `;
     clusterEl.appendChild(card);
   });
