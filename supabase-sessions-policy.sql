@@ -33,10 +33,10 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
--- Anyone can read the compass-position columns for all sessions
--- (x, y, cluster_idx, archetype, player_name only — no answers, no user_id)
+-- Anyone (signed in or not) can read compass position columns for all sessions
+drop policy if exists "allow authenticated reads all compass nodes" on public.sessions;
 create policy "allow public read compass nodes"
 on public.sessions
 for select
-to anon
+to anon, authenticated
 using (true);
